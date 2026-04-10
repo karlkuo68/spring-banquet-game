@@ -131,18 +131,18 @@ main{
 .dash-hero-name{
   font-size:32px;font-weight:900;letter-spacing:1px;
   margin-bottom:6px;
-  color:#1a0a00;
-  text-shadow:0 1px 2px rgba(255,255,255,.4);
+  color:#000000;
+  text-shadow:none;
 }
 .dash-hero-sub{
   font-size:15px;font-weight:800;
   margin-bottom:12px;
-  color:#3d2200;
-  text-shadow:0 1px 1px rgba(255,255,255,.3);
+  color:#000000;
+  text-shadow:none;
 }
 .dash-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
-.dash-meta .ubadge{font-size:13px;padding:4px 12px;font-weight:800;border-width:2px;}
-.dash-meta .rank-badge{font-size:13px;padding:4px 12px;font-weight:800;border-width:2px;}
+.dash-meta .ubadge{font-size:13px;padding:4px 12px;font-weight:800;border-width:2px;color:#000!important;}
+.dash-meta .rank-badge{font-size:13px;padding:4px 12px;font-weight:800;border-width:2px;color:#000!important;}
 
 /* ── STAT GRID ── */
 .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
@@ -733,7 +733,7 @@ input::placeholder{color:var(--muted);}
     <div class="card" style="max-width:340px;margin:40px auto;">
       <div class="ct">管理員登入</div>
       <div style="margin-bottom:10px;"><label>管理員</label>
-        <select id="admin-name-sel"><option value="">選擇…</option><option value="康哥">康哥</option><option value="珮">珮</option></select>
+        <select id="admin-name-sel"><option value="">選擇…</option><option value="GM1">GM1</option><option value="GM2">GM2</option></select>
       </div>
       <div style="margin-bottom:14px;"><label>密碼</label>
         <input type="password" id="admin-pw" placeholder="輸入密碼" onkeydown="if(event.key=='Enter')checkAdmin()">
@@ -1190,7 +1190,7 @@ var FIREBASE_CONFIG = {
 };
 
 // ADMINS
-var ADMINS = [{name:'康哥',pw:'1234'},{name:'珮',pw:'1234'}];
+var ADMINS = [{name:'GM1',pw:'123123'},{name:'GM2',pw:'123123'}];
 
 // MEMBER LIST
 
@@ -1237,7 +1237,8 @@ var MEMBER_LIST = [
   {name:"張峻瑋",unit:"yl"},
   {name:"鄧妝泠",unit:"yl"},
   {name:"陳璿敏",unit:"yl"},   // 小笠方→玉蘭
-  {name:"王芝彤",unit:"yl"}    // 小笠方→玉蘭
+  {name:"王芝彤",unit:"yl"},   // 小笠方→玉蘭
+  {name:"簡孜羽",unit:"yl"}    // 新增
 ];
 
 var UNITS={hq:{name:'總部',cls:'u-hq',color:'#f0b429'},se:{name:'小鵲東南',cls:'u-se',color:'#ff6b6b'},zb:{name:'小鵲竹北',cls:'u-zb',color:'#2dd4bf'},tc:{name:'小鵲台中',cls:'u-tc',color:'#c084fc'},yl:{name:'玉蘭',cls:'u-yl',color:'#4ade80'}};
@@ -1340,7 +1341,7 @@ function save(){
   else{try{localStorage.setItem('sa6',JSON.stringify({members:S.members,teams:S.teams,log:S.log,lottery:S.lottery,questions:S.questions,rankTiers:S.rankTiers,nextMid:S.nextMid,nextTid:S.nextTid}));}catch(e){}}
 }
 function saveMissions(){if(useFirebase&&db)db.ref('game/missions').set(S.missions);else try{localStorage.setItem('sa6_missions',JSON.stringify(S.missions));}catch(e){}}
-function loadSession(){adminIn=true;adminName='康哥';var r=localStorage.getItem('dashMid');dashMid=(r&&parseInt(r))?parseInt(r):null;}
+function loadSession(){adminIn=localStorage.getItem('adminIn')==='1';adminName=localStorage.getItem('adminName')||'';var r=localStorage.getItem('dashMid');dashMid=(r&&parseInt(r))?parseInt(r):null;}
 function validateSession(){if(dashMid&&!S.members[dashMid]){dashMid=null;localStorage.removeItem('dashMid');}}
 function saveSession(){localStorage.setItem('adminIn',adminIn?'1':'0');localStorage.setItem('adminName',adminName);localStorage.setItem('dashMid',dashMid?String(dashMid):'');}
 
@@ -1370,8 +1371,8 @@ function _doDataChange(){
 
 // ══ NAV ══
 // 頁面權限（需求#10）：一般3頁、管理員7頁
-var MEMBER_PAGES=['dashboard','leaderboard','station1','station2','station3'];
-var ADMIN_PAGES=['dashboard','leaderboard','station1','station2','station3','teams','members','admin'];
+var MEMBER_PAGES=['dashboard','leaderboard','station1','station2','station3','travel'];
+var ADMIN_PAGES=['dashboard','leaderboard','station1','station2','station3','travel','admin'];
 var pageHistory=['dashboard'];
 var PAGE_LABELS={dashboard:'首頁',leaderboard:'排行',station1:'🌸 第一站',station2:'🌿 第二站',station3:'🎤 第三站',travel:'✈ 關於此行',teams:'隊伍',members:'會員',admin:'後台'};
 function getAllowedPages(){return adminIn?ADMIN_PAGES:MEMBER_PAGES;}
@@ -1423,9 +1424,9 @@ function renderDash(){
   var teamHtml='';
   if(myTeam){var chips=(myTeam.members||[]).map(function(mid){var mm=gm(parseInt(mid));if(!mm)return '';var isMe=parseInt(mid)===dashMid;return '<div class="mchip" style="'+(isMe?'border-color:'+u.color+';background:'+u.color+'20':'')+'">'+mm.name+(isMe?' ★':'')+'<span class="mchip-score">'+(mm.score||0)+'</span></div>';}).join('');teamHtml='<div class="card"><div class="ct">我的隊伍 · '+myTeam.name+'</div><div style="margin-bottom:7px;font-size:12px;color:var(--sub);">合計：<span style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;color:'+myTeam.color+'">'+teamScore(myTeam)+'</span></div><div class="mchips">'+chips+'</div></div>';}
   el.innerHTML='<div class="dash-hero" style="background:linear-gradient(135deg,#f0b429 0%,#ffd166 100%);border-color:'+u.color+'50;">'+
-    '<div id="dash-score-num" class="dash-score" style="color:#000;">'+score+'</div>'+
+    '<div id="dash-score-num" class="dash-score" style="color:#000000;">'+score+'</div>'+
     '<div style="flex:1;position:relative;z-index:1;"><div class="dash-hero-name">'+me.name+'</div><div class="dash-hero-sub">我的積分 · #'+me.id+'</div>'+
-    '<div class="dash-meta">'+ubadge(me.unit)+' '+rankBadge(score)+(myTeam?'<span style="font-size:14px;font-weight:800;color:#1a0a00;background:'+myTeam.color+'66;border:2px solid '+myTeam.color+';padding:5px 14px;border-radius:20px;">■ '+myTeam.name+'</span>':'<span style="font-size:14px;font-weight:800;color:#3d2200;background:rgba(0,0,0,.1);padding:5px 14px;border-radius:20px;">未分隊</span>')+'</div></div>'+
+    '<div class="dash-meta">'+ubadge(me.unit)+' '+rankBadge(score)+(myTeam?'<span style="font-size:14px;font-weight:800;color:#000000;background:'+myTeam.color+'66;border:2px solid '+myTeam.color+';padding:5px 14px;border-radius:20px;">■ '+myTeam.name+'</span>':'<span style="font-size:14px;font-weight:800;color:#000000;background:rgba(0,0,0,.1);padding:5px 14px;border-radius:20px;">未分隊</span>')+'</div></div>'+
     '<button class="btn btn-ghost btn-sm" onclick="switchDash()" style="align-self:flex-start;flex-shrink:0;background:rgba(0,0,0,.12);border-color:rgba(0,0,0,.25);color:#000;font-weight:700;">切換</button></div>'+
     '<div class="dash-grid">'+
       '<div class="dstat"><div class="dstat-val" style="color:#fff;">'+uTotal+'</div><div class="dstat-lbl" style="color:#b0bbc8;">'+u.name+' 合計</div><div style="font-size:12px;color:#8b95a1;margin-top:3px;">'+uCnt+' 人</div></div>'+
@@ -1585,10 +1586,10 @@ function switchQTab(type){
   else{if(lipTab)lipTab.style.display='none';if(thornTab)thornTab.style.display='block';if(thornBtn){thornBtn.style.background='var(--accent)';thornBtn.style.color='#000';thornBtn.className='btn btn-sm';}if(lipBtn){lipBtn.style.background='';lipBtn.style.color='';lipBtn.className='btn btn-ghost btn-sm';}}
 }
 function navAdmin(){nav(null,'admin');}
-function renderQuestionsAdmin(){if(!adminIn)return;var isK=(adminName==='康哥');var la=document.getElementById('q-lip-add'),ta=document.getElementById('q-thorn-add');if(la)la.style.display=isK?'block':'none';if(ta)ta.style.display=isK?'block':'none';renderQList('lip');renderQList('thorn');}
-function renderQList(type){var el=document.getElementById('q-'+type+'-list');if(!el)return;var qs=(S.questions&&S.questions[type])?S.questions[type]:[];var now=Date.now();var isK=(adminName==='康哥');if(qs.length===0){el.innerHTML='<div class="empty" style="padding:14px 0;">尚無題目</div>';return;}el.innerHTML=qs.map(function(q,i){var onCD=q.usedAt&&(now-q.usedAt)<COOLDOWN_MS;var rem=onCD?Math.ceil((COOLDOWN_MS-(now-q.usedAt))/60000):0;return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid '+(onCD?'rgba(248,81,73,.3)':'var(--border)')+';background:'+(onCD?'rgba(248,81,73,.06)':'var(--surf)')+';margin-bottom:6px;"><div style="flex:1;font-size:13px;color:'+(onCD?'var(--muted)':'var(--text)')+';"> '+(onCD?'⏱ ':'')+q.text+(onCD?('<span style="font-size:10px;color:var(--red);margin-left:6px;">冷卻 '+rem+' 分</span>'):'')+'</div>'+(isK?'<button class="btn btn-danger btn-xs" onclick="deleteQuestion(\''+type+'\','+i+')">刪除</button>':'')+'</div>';}).join('');}
-function addQuestion(type){if(adminName!=='康哥'){showToast('只有康哥可以新增題目');return;}var inp=document.getElementById('q-'+type+'-inp');var text=inp.value.trim();if(!text){showToast('請輸入題目內容');return;}if(!S.questions)S.questions={lip:[],thorn:[]};if(!S.questions[type])S.questions[type]=[];for(var i=0;i<S.questions[type].length;i++){if(S.questions[type][i].text===text){showToast('題目已存在');return;}}S.questions[type].push({text:text,usedAt:null});save();inp.value='';renderQuestionsAdmin();showToast('題目已新增');}
-function deleteQuestion(type,idx){if(adminName!=='康哥'){showToast('只有康哥可以刪除題目');return;}S.questions[type].splice(idx,1);save();renderQuestionsAdmin();showToast('題目已刪除');}
+function renderQuestionsAdmin(){if(!adminIn)return;var isK=(adminName==='GM1');var la=document.getElementById('q-lip-add'),ta=document.getElementById('q-thorn-add');if(la)la.style.display=isK?'block':'none';if(ta)ta.style.display=isK?'block':'none';renderQList('lip');renderQList('thorn');}
+function renderQList(type){var el=document.getElementById('q-'+type+'-list');if(!el)return;var qs=(S.questions&&S.questions[type])?S.questions[type]:[];var now=Date.now();var isK=(adminName==='GM1');if(qs.length===0){el.innerHTML='<div class="empty" style="padding:14px 0;">尚無題目</div>';return;}el.innerHTML=qs.map(function(q,i){var onCD=q.usedAt&&(now-q.usedAt)<COOLDOWN_MS;var rem=onCD?Math.ceil((COOLDOWN_MS-(now-q.usedAt))/60000):0;return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid '+(onCD?'rgba(248,81,73,.3)':'var(--border)')+';background:'+(onCD?'rgba(248,81,73,.06)':'var(--surf)')+';margin-bottom:6px;"><div style="flex:1;font-size:13px;color:'+(onCD?'var(--muted)':'var(--text)')+';"> '+(onCD?'⏱ ':'')+q.text+(onCD?('<span style="font-size:10px;color:var(--red);margin-left:6px;">冷卻 '+rem+' 分</span>'):'')+'</div>'+(isK?'<button class="btn btn-danger btn-xs" onclick="deleteQuestion(\''+type+'\','+i+')">刪除</button>':'')+'</div>';}).join('');}
+function addQuestion(type){if(false){showToast('僅管理員可新增題目');return;}var inp=document.getElementById('q-'+type+'-inp');var text=inp.value.trim();if(!text){showToast('請輸入題目內容');return;}if(!S.questions)S.questions={lip:[],thorn:[]};if(!S.questions[type])S.questions[type]=[];for(var i=0;i<S.questions[type].length;i++){if(S.questions[type][i].text===text){showToast('題目已存在');return;}}S.questions[type].push({text:text,usedAt:null});save();inp.value='';renderQuestionsAdmin();showToast('題目已新增');}
+function deleteQuestion(type,idx){if(false){showToast('僅管理員可刪除題目');return;}S.questions[type].splice(idx,1);save();renderQuestionsAdmin();showToast('題目已刪除');}
 function drawQuestion(type){if(!S.questions||!S.questions[type]){showToast('尚無題目');return;}var now=Date.now();var available=S.questions[type].filter(function(q){return!q.usedAt||(now-q.usedAt)>=COOLDOWN_MS;});if(available.length===0){showToast('所有題目都在冷卻中！');return;}var picked=available[Math.floor(Math.random()*available.length)];for(var i=0;i<S.questions[type].length;i++){if(S.questions[type][i].text===picked.text){S.questions[type][i].usedAt=now;break;}}save();renderQuestionsAdmin();var icons={lip:'👄',thorn:'🌵'},names={lip:'唇語猜謎',thorn:'如芒刺背'};document.getElementById('draw-result-icon').textContent=icons[type];document.getElementById('draw-result-type').textContent=names[type];document.getElementById('draw-result-text').textContent=picked.text;openModal('modal-draw-result');}
 function resetQuestionCooldown(type){if(!S.questions||!S.questions[type])return;for(var i=0;i<S.questions[type].length;i++)S.questions[type][i].usedAt=null;save();renderQuestionsAdmin();showToast('冷卻已全部重置');}
 
@@ -1767,7 +1768,7 @@ function drawGameQuestion(){
   },80);
 }
 function resetGameCooldown(){if(!S.questions||!S.questions[curGame])return;for(var i=0;i<S.questions[curGame].length;i++)S.questions[curGame][i].usedAt=null;save();renderStation3();showToast('冷卻已重置');}
-function openAddQModal(){if(adminName!=='康哥'){showToast('只有康哥可以新增題目');return;}document.getElementById('add-q-type-label').textContent=curGame==='lip'?'👄 唇語猜謎':'🌵 如芒刺背';document.getElementById('add-q-inp').value='';openModal('modal-add-q');}
+function openAddQModal(){if(false){showToast('僅管理員可新增題目');return;}document.getElementById('add-q-type-label').textContent=curGame==='lip'?'👄 唇語猜謎':'🌵 如芒刺背';document.getElementById('add-q-inp').value='';openModal('modal-add-q');}
 function confirmAddQ(){var text=document.getElementById('add-q-inp').value.trim();if(!text){showToast('請輸入題目內容');return;}if(!S.questions)S.questions={lip:[],thorn:[]};if(!S.questions[curGame])S.questions[curGame]=[];for(var i=0;i<S.questions[curGame].length;i++){if(S.questions[curGame][i].text===text){showToast('題目已存在');return;}}S.questions[curGame].push({text:text,usedAt:null});save();closeModal('modal-add-q');renderStation3();renderQuestionsAdmin();showToast('題目已新增');}
 
 // ══ STATION 2 ADMIN ══

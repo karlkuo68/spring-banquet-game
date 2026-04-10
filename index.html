@@ -1367,14 +1367,14 @@ function _doDataChange(){
 
 // ══ NAV ══
 // 頁面權限（需求#10）：一般3頁、管理員7頁
-var MEMBER_PAGES=['dashboard','leaderboard','station1'];
-var ADMIN_PAGES=['dashboard','leaderboard','station1','teams','members','station3','admin'];
+var MEMBER_PAGES=['dashboard','leaderboard','station1','station2','station3'];
+var ADMIN_PAGES=['dashboard','leaderboard','station1','station2','station3','teams','members','admin'];
 var pageHistory=['dashboard'];
 var PAGE_LABELS={dashboard:'首頁',leaderboard:'排行',station1:'🌸 第一站',station2:'🌿 第二站',station3:'🎤 第三站',travel:'✈ 關於此行',teams:'隊伍',members:'會員',admin:'後台'};
 function getAllowedPages(){return adminIn?ADMIN_PAGES:MEMBER_PAGES;}
 function renderNav(activePage){
-  var ICONS={travel:'✈',dashboard:'🏠',leaderboard:'🏆',station1:'🗺',station2:'🌿',station3:'🎮',teams:'👥',members:'📋',admin:'⚙️'};
-  var SHORT={travel:'關於此行',dashboard:'首頁',leaderboard:'排行',station1:'任務',station2:'第二站',station3:'抽題',teams:'隊伍',members:'會員',admin:'後台'};
+  var ICONS={travel:'✈',dashboard:'🏠',leaderboard:'🏆',station1:'🌸',station2:'🌿',station3:'🎤',teams:'👥',members:'📋',admin:'⚙️'};
+  var SHORT={travel:'關於此行',dashboard:'首頁',leaderboard:'排行',station1:'第一站',station2:'第二站',station3:'第三站',teams:'隊伍',members:'會員',admin:'後台'};
   var allowed=getAllowedPages();var el=document.getElementById('nav-pills');var bn=document.getElementById('bottom-nav');var hb=document.getElementById('header-back-btn');
   if(!el)return;if(bn)bn.style.display='block';
   if(hb)hb.innerHTML=pageHistory.length>1?'<button onclick="goBack()" style="background:none;border:none;color:var(--sub);font-size:22px;cursor:pointer;padding:4px 8px;touch-action:manipulation;">&#8592;</button>':'';
@@ -1547,8 +1547,9 @@ function initUnitTeams(){
   var changed=false;
   for(var i=0;i<UNIT_KEYS.length;i++){
     var uk=UNIT_KEYS[i];var existing=getUnitTeam(uk);
-    if(!existing){var tid=S.nextTid++;var unitMembers=membersArray().filter(function(m){return m.unit===uk;}).map(function(m){return m.id;});S.teams[tid]={id:tid,name:UNIT_NAMES[uk],color:UNIT_COLORS[uk],unitKey:uk,members:unitMembers,leaderId:unitMembers.length>0?unitMembers[0]:null};changed=true;}
-    else if(!existing.leaderId&&existing.members&&existing.members.length>0){existing.leaderId=existing.members[0];S.teams[existing.id]=existing;changed=true;}
+    var unitMembers=membersArray().filter(function(m){return m.unit===uk;}).map(function(m){return m.id;});
+    if(!existing){var tid=S.nextTid++;S.teams[tid]={id:tid,name:UNIT_NAMES[uk],color:UNIT_COLORS[uk],unitKey:uk,members:unitMembers,leaderId:unitMembers.length>0?unitMembers[0]:null};changed=true;}
+    else{var old=JSON.stringify(existing.members||[]);existing.members=unitMembers;if(!existing.leaderId&&unitMembers.length>0)existing.leaderId=unitMembers[0];if(JSON.stringify(unitMembers)!==old){S.teams[existing.id]=existing;changed=true;}}
   }
   if(changed)save();
 }

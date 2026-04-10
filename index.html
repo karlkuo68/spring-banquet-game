@@ -1372,7 +1372,7 @@ function _doDataChange(){
 // ══ NAV ══
 // 頁面權限（需求#10）：一般3頁、管理員7頁
 var MEMBER_PAGES=['dashboard','leaderboard','station1','station2','station3','travel'];
-var ADMIN_PAGES=['dashboard','leaderboard','station1','station2','station3','travel','admin'];
+var ADMIN_PAGES=['dashboard','leaderboard','station1','station2','station3','travel'];
 var pageHistory=['dashboard'];
 var PAGE_LABELS={dashboard:'關於我',leaderboard:'排行',station1:'🌸 第一站',station2:'🌿 第二站',station3:'🎤 第三站',travel:'✈ 關於此行',teams:'隊伍',members:'會員',admin:'後台'};
 function getAllowedPages(){return adminIn?ADMIN_PAGES:MEMBER_PAGES;}
@@ -1580,7 +1580,13 @@ function switchQTab(type){
   if(type==='lip'){if(lipTab)lipTab.style.display='block';if(thornTab)thornTab.style.display='none';if(lipBtn){lipBtn.style.background='var(--accent)';lipBtn.style.color='#000';lipBtn.className='btn btn-sm';}if(thornBtn){thornBtn.style.background='';thornBtn.style.color='';thornBtn.className='btn btn-ghost btn-sm';}}
   else{if(lipTab)lipTab.style.display='none';if(thornTab)thornTab.style.display='block';if(thornBtn){thornBtn.style.background='var(--accent)';thornBtn.style.color='#000';thornBtn.className='btn btn-sm';}if(lipBtn){lipBtn.style.background='';lipBtn.style.color='';lipBtn.className='btn btn-ghost btn-sm';}}
 }
-function navAdmin(){nav(null,'admin');}
+function navAdmin(){
+  pageHistory.push('admin');
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var ap=document.getElementById('page-admin');if(ap)ap.classList.add('active');
+  renderNav(pageHistory[pageHistory.length-2]||'dashboard');
+  renderAdminPage();
+}
 function renderQuestionsAdmin(){if(!adminIn)return;var isK=(adminName==='GM1');var la=document.getElementById('q-lip-add'),ta=document.getElementById('q-thorn-add');if(la)la.style.display=isK?'block':'none';if(ta)ta.style.display=isK?'block':'none';renderQList('lip');renderQList('thorn');}
 function renderQList(type){var el=document.getElementById('q-'+type+'-list');if(!el)return;var qs=(S.questions&&S.questions[type])?S.questions[type]:[];var now=Date.now();var isK=(adminName==='GM1');if(qs.length===0){el.innerHTML='<div class="empty" style="padding:14px 0;">尚無題目</div>';return;}el.innerHTML=qs.map(function(q,i){var onCD=q.usedAt&&(now-q.usedAt)<COOLDOWN_MS;var rem=onCD?Math.ceil((COOLDOWN_MS-(now-q.usedAt))/60000):0;return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid '+(onCD?'rgba(248,81,73,.3)':'var(--border)')+';background:'+(onCD?'rgba(248,81,73,.06)':'var(--surf)')+';margin-bottom:6px;"><div style="flex:1;font-size:13px;color:'+(onCD?'var(--muted)':'var(--text)')+';"> '+(onCD?'⏱ ':'')+q.text+(onCD?('<span style="font-size:10px;color:var(--red);margin-left:6px;">冷卻 '+rem+' 分</span>'):'')+'</div>'+(isK?'<button class="btn btn-danger btn-xs" onclick="deleteQuestion(\''+type+'\','+i+')">刪除</button>':'')+'</div>';}).join('');}
 function addQuestion(type){if(false){showToast('僅管理員可新增題目');return;}var inp=document.getElementById('q-'+type+'-inp');var text=inp.value.trim();if(!text){showToast('請輸入題目內容');return;}if(!S.questions)S.questions={lip:[],thorn:[]};if(!S.questions[type])S.questions[type]=[];for(var i=0;i<S.questions[type].length;i++){if(S.questions[type][i].text===text){showToast('題目已存在');return;}}S.questions[type].push({text:text,usedAt:null});save();inp.value='';renderQuestionsAdmin();showToast('題目已新增');}

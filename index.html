@@ -1232,14 +1232,27 @@ var MEMBER_LIST = [
 
 var UNITS={hq:{name:'總部',cls:'u-hq',color:'#f0b429'},se:{name:'小鵲東南',cls:'u-se',color:'#ff6b6b'},zb:{name:'小鵲竹北',cls:'u-zb',color:'#2dd4bf'},tc:{name:'小鵲台中',cls:'u-tc',color:'#c084fc'},yl:{name:'玉蘭',cls:'u-yl',color:'#4ade80'}};
 var COLORS=['#f0b429','#ff6b6b','#2dd4bf','#c084fc','#4ade80','#f08030','#4090e0','#e060a0','#60c0f0','#a0c040'];
-var DEFAULT_RANK_TIERS=[{min:0,name:'青銅',cls:'rank-bronze',icon:'🥉'},{min:10,name:'白銀',cls:'rank-silver',icon:'🥈'},{min:20,name:'黃金',cls:'rank-gold',icon:'🥇'},{min:30,name:'白金',cls:'rank-platinum',icon:'💎'},{min:40,name:'鑽石',cls:'rank-diamond',icon:'♾️'}];
+// 10段頭銜等級（需求#6）
+var DEFAULT_RANK_TIERS=[
+  {min:0,  name:'青銅一段',cls:'rank-bronze',  icon:'🥉'},
+  {min:10, name:'青銅二段',cls:'rank-bronze',  icon:'🥉'},
+  {min:20, name:'青銅三段',cls:'rank-bronze',  icon:'🥉'},
+  {min:30, name:'白銀一段',cls:'rank-silver',  icon:'🥈'},
+  {min:40, name:'白銀二段',cls:'rank-silver',  icon:'🥈'},
+  {min:50, name:'白銀三段',cls:'rank-silver',  icon:'🥈'},
+  {min:60, name:'黃金一段',cls:'rank-gold',    icon:'🥇'},
+  {min:70, name:'黃金二段',cls:'rank-gold',    icon:'🥇'},
+  {min:80, name:'黃金三段',cls:'rank-gold',    icon:'🥇'},
+  {min:100,name:'鑽石',    cls:'rank-diamond', icon:'💎'}
+];
 var RANK_CSS=['rank-bronze','rank-silver','rank-gold','rank-platinum','rank-diamond'];
 var RANK_ICONS=['🥉','🥈','🥇','💎','♾️','⭐','🌟','🔥','👑','🏆'];
 var UNIT_KEYS=['hq','se','zb','tc','yl'];
 var UNIT_NAMES={hq:'總部',se:'小鵲東南',zb:'小鵲竹北',tc:'小鵲台中',yl:'玉蘭'};
 var UNIT_COLORS={hq:'#f0b429',se:'#ff6b6b',zb:'#2dd4bf',tc:'#c084fc',yl:'#4ade80'};
-var DEFAULT_LOCATIONS=['白色玻璃教堂（左上）','京都街道（右上）','歐風城堡（中間）','巨大時鐘室內區（左下）','水上鞦韆（右下）'];
-var Q3_LOCATION='入口招牌處';
+// 銅鑼莫內秘密花園五景點（需求#8）
+var DEFAULT_LOCATIONS=['白色玻璃教堂','日式京都街道','歐風城堡','水上鞦韆','巨大時鐘廣場'];
+var Q3_LOCATION='莫內秘密花園入口廣場';
 var STATION2_GAMES=[{id:'g1',name:'守護聖杯 I',icon:'🏆',desc:'第一關守護聖杯挑戰，詳細規則見解說圖。'},{id:'g2',name:'守護聖杯 II',icon:'🏆',desc:'進階版守護聖杯，考驗團隊默契與反應。'},{id:'g3',name:'過河造橋',icon:'🌉',desc:'合力搭橋過河，考驗溝通協作能力。'},{id:'g4',name:'四人五腳',icon:'🦵',desc:'四人捆腳同步前進，需要高度配合。'}];
 var COOLDOWN_MS=2*60*60*1000;
 var S={members:{},teams:{},log:[],lottery:[],questions:{lip:[],thorn:[]},rankTiers:[],missions:{},nextMid:1001,nextTid:1};
@@ -1345,14 +1358,15 @@ function _doDataChange(){
 
 
 // ══ NAV ══
-var MEMBER_PAGES=['travel','dashboard','leaderboard','station1','station2','station3'];
-var ADMIN_PAGES=['travel','dashboard','leaderboard','station1','station2','station3','teams','members','admin'];
+// 頁面權限（需求#10）：一般3頁、管理員7頁
+var MEMBER_PAGES=['dashboard','leaderboard','station1'];
+var ADMIN_PAGES=['dashboard','leaderboard','station1','teams','members','station3','admin'];
 var pageHistory=['dashboard'];
 var PAGE_LABELS={dashboard:'首頁',leaderboard:'排行',station1:'🌸 第一站',station2:'🌿 第二站',station3:'🎤 第三站',travel:'✈ 關於此行',teams:'隊伍',members:'會員',admin:'後台'};
 function getAllowedPages(){return adminIn?ADMIN_PAGES:MEMBER_PAGES;}
 function renderNav(activePage){
-  var ICONS={travel:'✈',dashboard:'🏠',leaderboard:'🏆',station1:'🌸',station2:'🌿',station3:'🎤',teams:'👥',members:'📋',admin:'⚙️'};
-  var SHORT={travel:'關於此行',dashboard:'首頁',leaderboard:'排行',station1:'第一站',station2:'第二站',station3:'第三站',teams:'隊伍',members:'會員',admin:'後台'};
+  var ICONS={travel:'✈',dashboard:'🏠',leaderboard:'🏆',station1:'🗺',station2:'🌿',station3:'🎮',teams:'👥',members:'📋',admin:'⚙️'};
+  var SHORT={travel:'關於此行',dashboard:'首頁',leaderboard:'排行',station1:'任務',station2:'第二站',station3:'抽題',teams:'隊伍',members:'會員',admin:'後台'};
   var allowed=getAllowedPages();var el=document.getElementById('nav-pills');var bn=document.getElementById('bottom-nav');var hb=document.getElementById('header-back-btn');
   if(!el)return;if(bn)bn.style.display='block';
   if(hb)hb.innerHTML=pageHistory.length>1?'<button onclick="goBack()" style="background:none;border:none;color:var(--sub);font-size:22px;cursor:pointer;padding:4px 8px;touch-action:manipulation;">&#8592;</button>':'';
@@ -1420,7 +1434,8 @@ function renderLB(){
   else{
     var topScore=sorted[0].score||0;var kings=topScore>0?sorted.filter(function(m){return(m.score||0)===topScore;}):[];
     if(kings.length>0){html+='<div class="lb-king"><div class="lb-king-crown">👑</div><div class="lb-king-title">遊 戲 王</div><div class="lb-king-names">'+kings.map(function(m){return m.name;}).join('　')+'</div><div class="lb-king-score">'+topScore+'</div><div style="margin-top:8px;">'+kings.map(function(m){return ubadge(m.unit);}).join('&nbsp;')+'</div><div class="lb-king-badge">👑 遊戲王</div></div>';}
-    var rest=kings.length>0?sorted.slice(kings.length):sorted;var startRank=kings.length>0?kings.length+1:1;var vis=rest.slice(0,6),hid=rest.slice(6);
+    // 2-6名正常列出，7+折疊（需求#9）
+    var rest=kings.length>0?sorted.slice(kings.length):sorted;var startRank=kings.length>0?kings.length+1:1;var vis=rest.slice(0,5),hid=rest.slice(5);
     var rows='';vis.forEach(function(m,i){var rank=startRank+i,isMe=m.id===dashMid;var rc=rank===1?'gold':rank===2?'silver':rank===3?'bronze':'';var med=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;rows+='<div class="lb-row'+(isMe?' me':'')+'"><div class="lb-rank '+rc+'">'+med+'</div><div class="lb-name">'+m.name+(isMe?' ⭐':'')+'<div class="lb-sub">'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'</div></div>'+rankBadge(m.score)+'<div class="lb-score">'+(m.score||0)+'</div></div>';});
     html+='<div class="card">'+rows;
     if(hid.length>0){var hr='';hid.forEach(function(m,i){var rank=startRank+6+i,isMe=m.id===dashMid;hr+='<div class="lb-row'+(isMe?' me':'')+'"><div class="lb-rank">'+rank+'</div><div class="lb-name">'+m.name+(isMe?' ⭐':'')+'<div class="lb-sub">'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'</div></div>'+rankBadge(m.score)+'<div class="lb-score">'+(m.score||0)+'</div></div>';});html+='<div id="lb-hidden" style="display:none;">'+hr+'</div><button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;" id="lb-toggle-btn" onclick="toggleLBHidden()">▼ 顯示其餘 '+hid.length+' 人</button>';}
@@ -1582,11 +1597,25 @@ function resetAllMissions(){S.missions={};saveMissions();showToast('任務已全
 function uploadPhoto(unitKey,stage,inputEl){
   var files=inputEl.files;if(!files||files.length===0)return;
   var reader=new FileReader();
-  reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas');var maxW=800;var scale=Math.min(1,maxW/img.width);canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);var b64=canvas.toDataURL('image/jpeg',0.7);if(!S.missions)S.missions={};if(!S.missions[unitKey])S.missions[unitKey]={};var key=stage+'Photos';if(!S.missions[unitKey][key])S.missions[unitKey][key]=[];S.missions[unitKey][key].push(b64);S.missions[unitKey][stage+'Done']=true;saveMissions();renderMissionsPage();showToast('照片已上傳，任務完成！');};img.src=e.target.result;};
+  reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas');var maxW=800;var scale=Math.min(1,maxW/img.width);canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);var b64=canvas.toDataURL('image/jpeg',0.7);if(!S.missions)S.missions={};if(!S.missions[unitKey])S.missions[unitKey]={};var key=stage+'Photos';if(!S.missions[unitKey][key])S.missions[unitKey][key]=[];S.missions[unitKey][key].push(b64);S.missions[unitKey][stage+'Done']=true;saveMissions();renderMissionsPage();showToast(stage==='loc3'?'📷 照片已上傳！按下方按鈕完成第三關':'照片已上傳，任務完成！');};img.src=e.target.result;};
   reader.readAsDataURL(files[0]);inputEl.value='';
 }
 function deletePhoto(unitKey,stage,idx){var key=stage+'Photos';if(S.missions&&S.missions[unitKey]&&S.missions[unitKey][key]){S.missions[unitKey][key].splice(idx,1);saveMissions();renderMissionsPage();}}
-function markQ3Done(uk){if(!S.missions)S.missions={};if(!S.missions[uk])S.missions[uk]={};S.missions[uk].q3Done=true;saveMissions();renderMissionsPage();showToast('🎉 恭喜完成所有任務！');}
+// 完成三關：標記完成並自動加 30 分給該單位所有成員（需求#8）
+function markQ3Done(uk){
+  if(!S.missions)S.missions={};
+  if(!S.missions[uk])S.missions[uk]={};
+  if(S.missions[uk].q3Done)return;// 防止重複加分
+  S.missions[uk].q3Done=true;
+  var team=getUnitTeam(uk);
+  if(team&&team.members&&team.members.length>0){
+    team.members.forEach(function(mid){var m=gm(parseInt(mid));if(m){m.score=(m.score||0)+30;S.members[m.id]=m;}});
+    addLog(UNIT_NAMES[uk]+'完成三關任務',30,'任務三完成 獎勵30分');
+    save();
+  }
+  saveMissions();renderMissionsPage();if(adminIn)renderAdminContent();
+  showToast('🎉 恭喜完成所有任務！全隊各得 30 分！');
+}
 function renderMissionsPage(){
   var el=document.getElementById('missions-body');if(!el)return;
   if(!dashMid&&!adminIn){el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:12px;text-align:center;"><div style="font-size:40px;">🗺</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:24px;letter-spacing:2px;color:var(--accent);">任務關卡</div><p style="color:var(--sub);font-size:13px;">請先在「首頁」選擇你的帳號</p></div>';return;}
@@ -1601,22 +1630,56 @@ function renderMissionsPage(){
     var locRefPhoto=null;if(S.missions&&S.missions._locPhotos){var allLocs=(S.missions&&S.missions._locations)||DEFAULT_LOCATIONS;var locIdx=allLocs.indexOf(ms.loc1);if(locIdx>=0&&S.missions._locPhotos[locIdx])locRefPhoto=S.missions._locPhotos[locIdx];}
     html+='<div class="mission-card '+(q1Status==='wait'?'locked':(q1Status==='done'?'done':'active'))+'"><div class="mission-num">1</div><div class="mission-tag mission-tag-'+(q1Status==='wait'?'locked':(q1Status==='done'?'done':'active'))+'">'+(q1Status==='wait'?'🔒 等待開始':(q1Status==='done'?'✅ 已完成':'⚡ 進行中'))+'</div><div class="mission-title">任務一 · 前往指定地點拍照</div><div class="mission-desc">每個單位前往抽籤分配的地點，拍攝全隊合照後上傳。</div>';
     if(q1Active){html+='<div class="mission-dest">📍 你們的地點：'+(ms.loc1||'—')+'</div>';if(locRefPhoto)html+='<div style="margin:10px 0;border-radius:10px;overflow:hidden;border:1px solid var(--border);max-width:320px;"><img src="'+locRefPhoto+'" style="width:100%;display:block;" loading="lazy"><div style="padding:6px 10px;font-size:11px;color:var(--sub);background:var(--surf);">📍 參考照片</div></div>';html+='<br>';}
-    if(q1Active&&!q1Done&&canOp)html+='<label class="photo-upload-area" for="q1-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳照片即完成任務</div></label><input type="file" id="q1-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc1\',this)">';
+    // Q1 照片上傳（capture 支援 iOS 直接拍照，需求#2 #8）
+    if(q1Active&&!q1Done&&canOp)html+='<label class="photo-upload-area" for="q1-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳照片即完成任務</div></label><input type="file" id="q1-upload-'+uk+'" accept="image/*" capture="environment" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc1\',this)">';
     if(q1Photos.length>0){var q1key=registerPhotoSet(q1Photos);html+='<div class="photo-grid">';for(var pi=0;pi<q1Photos.length;pi++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q1key+'\','+pi+')"><img src="'+q1Photos[pi]+'" loading="lazy">'+(canOp&&!q1Done?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc1\','+pi+')">🗑</div>':'')+' </div>';html+='</div>';}
     html+='</div>';
     // Q2
     var q2Unlocked=q1Done,q2Done=!!ms.loc2Done,q2Photos=ms.loc2Photos||[];var q2Target=ms.loc2Target?UNIT_NAMES[ms.loc2Target]:'—';
     if(!q2Unlocked){html+='<div class="mission-card locked"><div class="mission-num">2</div><div class="mission-tag mission-tag-locked">🔒 完成任務一後解鎖</div><div class="mission-title" style="color:var(--muted);">任務二</div><div style="font-size:13px;color:var(--muted);margin-top:4px;">內容解鎖前保密</div></div>';}
-    else{html+='<div class="mission-card '+(q2Done?'done':'active')+'"><div class="mission-num">2</div><div class="mission-tag mission-tag-'+(q2Done?'done':'active')+'">'+(q2Done?'✅ 已完成':'⚡ 進行中')+'</div><div class="mission-title">任務二 · 跨隊合照</div><div class="mission-desc">前往找指定隊伍拍合照，對方不能拒絕！</div><div class="mission-dest">🤝 找：<strong>'+q2Target+'</strong> 拍合照</div><br>';if(!q2Done&&canOp)html+='<label class="photo-upload-area" for="q2-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳合照即完成任務</div></label><input type="file" id="q2-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc2\',this)">';if(q2Photos.length>0){var q2key=registerPhotoSet(q2Photos);html+='<div class="photo-grid">';for(var pj2=0;pj2<q2Photos.length;pj2++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q2key+'\','+pj2+')"><img src="'+q2Photos[pj2]+'" loading="lazy">'+(canOp&&!q2Done?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc2\','+pj2+')">🗑</div>':'')+' </div>';html+='</div>';}html+='</div>';}
-    // Q3
+    else{html+='<div class="mission-card '+(q2Done?'done':'active')+'"><div class="mission-num">2</div><div class="mission-tag mission-tag-'+(q2Done?'done':'active')+'">'+(q2Done?'✅ 已完成':'⚡ 進行中')+'</div><div class="mission-title">任務二 · 跨隊合照</div><div class="mission-desc">前往找指定隊伍拍合照，對方不能拒絕！</div><div class="mission-dest">🤝 找：<strong>'+q2Target+'</strong> 拍合照</div><br>';// Q2 照片上傳（capture 支援 iOS 直接拍照，需求#2 #8）
+      if(!q2Done&&canOp)html+='<label class="photo-upload-area" for="q2-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳合照即完成任務</div></label><input type="file" id="q2-upload-'+uk+'" accept="image/*" capture="environment" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc2\',this)">';if(q2Photos.length>0){var q2key=registerPhotoSet(q2Photos);html+='<div class="photo-grid">';for(var pj2=0;pj2<q2Photos.length;pj2++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q2key+'\','+pj2+')"><img src="'+q2Photos[pj2]+'" loading="lazy">'+(canOp&&!q2Done?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc2\','+pj2+')">🗑</div>':'')+' </div>';html+='</div>';}html+='</div>';}
+    // Q3：大合照 + 倒數計時 + 30分獎勵（需求#8）
     var q3Unlocked=q1Done&&q2Done,q3Done=!!ms.q3Done;var q3Loc=(S.missions&&S.missions._q3location)||Q3_LOCATION;
+    var q3Photos=ms.loc3Photos||[];
     if(!q3Unlocked){html+='<div class="mission-card locked"><div class="mission-num">3</div><div class="mission-tag mission-tag-locked">🔒 完成前兩個任務後解鎖</div><div class="mission-title" style="color:var(--muted);">任務三</div><div style="font-size:13px;color:var(--muted);margin-top:4px;">內容解鎖前保密</div></div>';}
-    else{html+='<div class="mission-card '+(q3Done?'done':'active')+'"><div class="mission-num">3</div><div class="mission-tag mission-tag-'+(q3Done?'done':'active')+'">'+(q3Done?'✅ 已完成':'⚡ 進行中')+'</div><div class="mission-title">任務三 · 回到最初的起點</div><div class="mission-desc">準時到出口附近的入口招牌處集合，拍全隊大合照！入鏡者皆得分，逾時不候！</div><div class="mission-dest">📍 集合地點：'+q3Loc+'</div>';if(!q3Done&&canOp)html+='<button class="btn btn-success" style="width:100%;margin-top:12px;" onclick="markQ3Done(\''+uk+'\')">✅ 拍完囉，完成任務！</button>';html+='</div>';}
+    else{
+      html+='<div class="mission-card '+(q3Done?'done':'active')+'"><div class="mission-num">3</div><div class="mission-tag mission-tag-'+(q3Done?'done':'active')+'">'+(q3Done?'✅ 已完成 +30分':'⚡ 進行中')+'</div>';
+      html+='<div class="mission-title">任務三 · 莫內秘密花園大合照</div>';
+      html+='<div class="mission-desc">中午 12:00 在集合地點拍全隊大合照，完成後全隊各得 30 分！</div>';
+      html+='<div class="mission-dest">📍 集合地點：'+q3Loc+'</div>';
+      // 倒數計時器（每秒更新）
+      if(!q3Done)html+='<div id="q3-timer-'+uk+'" style="margin:12px 0;padding:10px 14px;border-radius:10px;background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.2);font-family:\'Bebas Neue\',sans-serif;font-size:22px;color:var(--accent);text-align:center;">計算中…</div>';
+      // 照片上傳
+      if(!q3Done&&canOp){html+='<label class="photo-upload-area" for="q3-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳大合照</div></label><input type="file" id="q3-upload-'+uk+'" accept="image/*" capture="environment" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc3\',this)">';}
+      // 已上傳照片縮圖
+      if(q3Photos.length>0){var q3key=registerPhotoSet(q3Photos);html+='<div class="photo-grid">';for(var pq3=0;pq3<q3Photos.length;pq3++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q3key+'\','+pq3+')"><img src="'+q3Photos[pq3]+'" loading="lazy">'+(canOp&&!q3Done?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc3\','+pq3+')">🗑</div>':'')+' </div>';html+='</div>';}
+      // 完成按鈕（有照片才顯示）
+      if(!q3Done&&canOp&&q3Photos.length>0)html+='<button class="btn btn-success" style="width:100%;margin-top:12px;" onclick="markQ3Done(\''+uk+'\')">✅ 完成第三關（全隊 +30分）</button>';
+      html+='</div>';
+    }
     html+='</div>';
   }
   if(viewUnits.length===0)html='<div class="empty"><div class="empty-ico">🗺</div>你尚未加入任何單位</div>';
   el.innerHTML=html;
+  startQ3Timers();// 啟動倒數計時器（需求#8）
 }
+
+// Q3 倒數計時到當天 12:00（需求#8）
+var _q3TimerInterval=null;
+function startQ3Timers(){
+  clearInterval(_q3TimerInterval);
+  _q3TimerInterval=setInterval(function(){
+    var now=new Date();var noon=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12,0,0,0);
+    var diff=noon-now;var el2=null;
+    UNIT_KEYS.forEach(function(uk){
+      el2=document.getElementById('q3-timer-'+uk);if(!el2)return;
+      if(diff<=0){el2.textContent='🕛 12:00 已到！請迅速集合！';el2.style.color='var(--green)';}
+      else{var h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);el2.textContent='⏱ 距 12:00 還有 '+h+' 時 '+String(m).padStart(2,'0')+' 分 '+String(s).padStart(2,'0')+' 秒';}
+    });
+  },1000);
+}
+
 function renderMissionAdmin(){
   var el=document.getElementById('admin-mission-section');if(!el)return;
   var q3Loc=(S.missions&&S.missions._q3location)||'';var locs=(S.missions&&S.missions._locations)||DEFAULT_LOCATIONS;

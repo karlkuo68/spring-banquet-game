@@ -1441,9 +1441,16 @@ function renderLB(){
   if(sorted.length===0){html+='<div class="card"><div class="empty"><div class="empty-ico">🏅</div>尚無會員</div></div>';}
   else{
     var topScore=sorted[0].score||0;var kings=topScore>0?sorted.filter(function(m){return(m.score||0)===topScore;}):[];
-    if(kings.length>0){html+='<div class="lb-king" style="margin-bottom:20px;padding:28px 20px;"><div class="lb-king-crown" style="font-size:48px;">👑</div><div class="lb-king-title" style="font-size:13px;letter-spacing:4px;">遊 戲 王</div><div class="lb-king-names" style="font-size:42px;">'+kings.map(function(m){return m.name;}).join('　')+'</div><div class="lb-king-score" style="font-size:64px;">'+topScore+'</div><div style="margin-top:10px;">'+kings.map(function(m){return ubadge(m.unit);}).join('&nbsp;')+'</div><div class="lb-king-badge" style="margin-top:12px;font-size:14px;padding:6px 18px;">👑 遊戲王</div></div>';}
+    // 遊戲王板塊：永遠置頂顯示
+    html+='<div class="lb-king" style="margin-bottom:20px;padding:28px 20px;">';
+    if(kings.length>0){
+      html+='<div class="lb-king-crown" style="font-size:48px;">👑</div><div class="lb-king-title" style="font-size:13px;letter-spacing:4px;">遊 戲 王</div><div class="lb-king-names" style="font-size:42px;">'+kings.map(function(m){return m.name;}).join('　')+'</div><div class="lb-king-score" style="font-size:64px;">'+topScore+'</div><div style="margin-top:10px;">'+kings.map(function(m){return ubadge(m.unit);}).join('&nbsp;')+'</div><div class="lb-king-badge" style="margin-top:12px;font-size:14px;padding:6px 18px;">👑 遊戲王</div>';
+    } else {
+      html+='<div class="lb-king-crown" style="font-size:48px;">👑</div><div class="lb-king-title" style="font-size:13px;letter-spacing:4px;">遊 戲 王</div><div class="lb-king-names" style="font-size:28px;opacity:.5;">等待第一位得分者</div><div class="lb-king-score" style="font-size:48px;opacity:.3;">0</div><div class="lb-king-badge" style="margin-top:12px;font-size:14px;padding:6px 18px;opacity:.5;">👑 虛位以待</div>';
+    }
+    html+='</div>';
     html+='<div class="sh"><div class="sh-title">📊 個人排行榜</div></div>';
-    // 第二名開始列出
+    // 第二名開始列出（有遊戲王時跳過第一名）
     var rest=kings.length>0?sorted.slice(kings.length):sorted;var startRank=kings.length>0?kings.length+1:1;var vis=rest.slice(0,5),hid=rest.slice(5);
     var rows='';vis.forEach(function(m,i){var rank=startRank+i,isMe=m.id===dashMid;var rc=rank===1?'gold':rank===2?'silver':rank===3?'bronze':'';var med=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;rows+='<div class="lb-row'+(isMe?' me':'')+'"><div class="lb-rank '+rc+'">'+med+'</div><div class="lb-name">'+m.name+(isMe?' ⭐':'')+'<div class="lb-sub">'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'</div></div>'+rankBadge(m.score)+'<div class="lb-score">'+(m.score||0)+'</div></div>';});
     html+='<div class="card">'+rows;

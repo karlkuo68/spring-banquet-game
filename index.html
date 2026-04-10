@@ -675,8 +675,8 @@ input::placeholder{color:var(--muted);}
   <div style="display:flex;align-items:center;gap:6px;">
     <div id="header-back-btn"></div>
     <button id="admin-header-btn" onclick="navAdmin()"
-      style="background:none;border:1px solid var(--border);border-radius:8px;
-      color:var(--sub);font-size:13px;padding:5px 10px;cursor:pointer;
+      style="background:rgba(240,180,41,.15);border:1px solid rgba(240,180,41,.4);border-radius:8px;
+      color:#f0b429;font-size:13px;font-weight:700;padding:5px 10px;cursor:pointer;
       touch-action:manipulation;">⚙️ 後台</button>
   </div>
 </header>
@@ -1412,7 +1412,7 @@ function buildUnitGrid(){var arr=Object.keys(UNITS).map(function(k){return{k:k,c
 function buildRankBars(){var arr=Object.keys(UNITS).map(function(k){return{name:UNITS[k].name,color:UNITS[k].color,score:unitScore(k)};});arr.sort(function(a,b){return b.score-a.score;});var max=Math.max.apply(null,arr.map(function(s){return s.score;}).concat([1]));return '<div class="rbar-wrap">'+arr.map(function(s){return '<div class="rbar-row"><div class="rbar-lbl">'+s.name+'</div><div class="rbar-track"><div class="rbar-fill" style="width:'+Math.max(2,Math.round(s.score/max*100))+'%;background:'+s.color+'"></div></div><div class="rbar-val">'+s.score+'</div></div>';}).join('')+'</div>';}
 function renderDash(){
   var el=document.getElementById('dash-body');if(!el)return;
-  if(!dashMid||!gm(dashMid)){var arr=membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');});el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:54vh;gap:12px;"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;letter-spacing:3px;color:var(--accent);">選擇你的帳號</div><p style="color:var(--sub);font-size:13px;">先選單位，再選你的名字</p>'+(arr.length===0?'<div style="color:var(--sub);font-size:13px;">尚無會員，請管理員先建立名單</div>':buildUnitNameSelector())+'</div>';return;}
+  if(!dashMid||!gm(dashMid)){var arr=membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');});el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:54vh;gap:12px;"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;letter-spacing:3px;color:var(--accent);">選擇你的帳號</div><p style="color:var(--sub);font-size:13px;">先選單位，再選你的名字</p>'+(arr.length===0?'<div style="color:var(--sub);font-size:13px;">尚無會員，請管理員先建立名單</div>':buildUnitNameSelector())+'<div style="margin-top:24px;"><button onclick="navAdmin()" style="background:rgba(240,180,41,.15);border:1px solid rgba(240,180,41,.4);border-radius:10px;color:#f0b429;font-size:14px;font-weight:700;padding:12px 24px;cursor:pointer;font-family:\'Noto Sans TC\',sans-serif;touch-action:manipulation;">⚙️ 管理員登入後台</button></div></div>';return;}
   var me=gm(dashMid),myTeam=memberTeam(dashMid),u=UNITS[me.unit]||{name:'',cls:'',color:'#999'},score=me.score||0;prevScores[dashMid]=score;
   var allM=membersArray(),sorted=allM.slice().sort(function(a,b){return(b.score||0)-(a.score||0);});var top1=sorted[0]||null;
   var uScores=Object.keys(UNITS).map(function(k){return{k:k,name:UNITS[k].name,color:UNITS[k].color,score:unitScore(k)};});uScores.sort(function(a,b){return b.score-a.score;});var topU=uScores[0]||null;

@@ -878,8 +878,8 @@ input::placeholder{color:var(--muted);}
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
-            <button class="btn btn-primary btn-sm" style="flex:1;" onclick="drawQuestion('lip')">🎲 隨機抽題</button>
-            <button class="btn btn-ghost btn-sm" onclick="resetQuestionCooldown('lip')">⟳ Reset 冷卻</button>
+            <button class="btn btn-primary btn-sm" style="flex:1;" onclick="drawLip()">🎲 隨機抽題</button><button class="btn btn-ghost btn-sm" onclick="resetLipUsed()">⟳ 重置</button>
+            
           </div>
           <div id="q-lip-result" style="margin-top:10px;"></div>
         </div>
@@ -895,8 +895,10 @@ input::placeholder{color:var(--muted);}
             </div>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
-            <button class="btn btn-primary btn-sm" style="flex:1;" onclick="drawQuestion('thorn')">🎲 隨機抽題</button>
-            <button class="btn btn-ghost btn-sm" onclick="resetQuestionCooldown('thorn')">⟳ Reset 冷卻</button>
+            <button class="btn btn-success btn-sm" onclick="drawThorn('easy')">🟢簡</button>
+            <button class="btn btn-primary btn-sm" onclick="drawThorn('medium')">🟡中</button>
+            <button class="btn btn-danger btn-sm" onclick="drawThorn('hard')">🔴難</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetThornUsed()">⟳ 重置</button>
           </div>
           <div id="q-thorn-result" style="margin-top:10px;"></div>
         </div>
@@ -1905,8 +1907,24 @@ function initUnitTeams(){
 }
 
 // ══ LOTTERY ══
-function renderLotteryUI(){var sel=document.getElementById('lottery-pool');sel.onchange=function(){var pDiv=document.getElementById('lottery-pool-sel');var pSel=document.getElementById('lottery-pool-target');if(sel.value==='unit'){pDiv.style.display='block';pSel.innerHTML=Object.keys(UNITS).map(function(k){return '<option value="'+k+'">'+UNITS[k].name+'</option>';}).join('');}else if(sel.value==='team'){pDiv.style.display='block';pSel.innerHTML=teamsArray().map(function(t){return '<option value="'+t.id+'">'+t.name+'</option>';}).join('');}else pDiv.style.display='none';};renderLotteryHistory();}
-function runLottery(){var pool=document.getElementById('lottery-pool').value;var count=Math.max(1,parseInt(document.getElementById('lottery-count').value)||1);var candidates=membersArray();if(pool==='unit'){var uk=document.getElementById('lottery-pool-target').value;candidates=candidates.filter(function(m){return m.unit===uk;});}else if(pool==='team'){var tid=parseInt(document.getElementById('lottery-pool-target').value);var t=gt(tid);if(t)candidates=(t.members||[]).map(function(mid){return gm(parseInt(mid));}).filter(Boolean);}if(candidates.length===0){showToast('沒有可抽的會員');return;}count=Math.min(count,candidates.length);var el=document.getElementById('lottery-result');el.className='lottery-result lottery-rolling';var i=0;clearInterval(lotteryTimer);lotteryTimer=setInterval(function(){el.textContent=candidates[Math.floor(Math.random()*candidates.length)].name;i++;if(i>20){clearInterval(lotteryTimer);var winners=candidates.slice().sort(function(){return Math.random()-.5;}).slice(0,count);el.className='lottery-result';el.innerHTML=winners.map(function(m){return m.name;}).join(' / ');if(!Array.isArray(S.lottery))S.lottery=[];S.lottery.unshift({time:nowTime(),winners:winners.map(function(m){return m.name;}),by:adminName});if(S.lottery.length>50)S.lottery=S.lottery.slice(0,50);save();renderLotteryHistory();document.getElementById('lottery-winners').innerHTML=winners.map(function(m){return '🎊 '+m.name+' 🎊';}).join('<br>');openModal('modal-lottery-win');}},80);}
+function renderLotteryUI(){var sel=document.getElementById('lottery-pool');sel.onchange=function(){var pDiv=document.getElementById('lottery-pool-sel');var pSel=document.getElementById('lottery-pool-target');if(sel.value==='unit'){pDiv.style.display='block';pSel.innerHTML=Object.keys(UNITS).map(function(k){return '<option value="'+k+'">'+UNITS[k].name+'</option>';}).join('');}else if(sel.value==='team'){pDiv.style.display='block';
+      var gt0=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
+      var gDefs=[{id:'g2',name:'守護聖杯II'},{id:'g3',name:'過河造橋'},{id:'g4',name:'四人五腳'},{id:'lip',name:'比手劃腳'},{id:'thorn',name:'如芒刺背'}];
+      var tOpts='';
+      gDefs.forEach(function(gd){
+        var teams=(gt0[gd.id]||[]);
+        if(teams.length>0){
+          tOpts+='<optgroup label="── '+gd.name+' ──">';
+          teams.forEach(function(tt,tidx){
+            var names=tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、');
+            tOpts+='<option value="'+gd.id+'_'+tidx+'">'+tt.name+' ('+names+')</option>';
+          });
+          tOpts+='</optgroup>';
+        }
+      });
+      pSel.innerHTML=tOpts||'<option>尚無遊戲隊伍</option>';
+    }else pDiv.style.display='none';};renderLotteryHistory();}
+function runLottery(){var pool=document.getElementById('lottery-pool').value;var count=Math.max(1,parseInt(document.getElementById('lottery-count').value)||1);var candidates=membersArray();if(pool==='unit'){var uk=document.getElementById('lottery-pool-target').value;candidates=candidates.filter(function(m){return m.unit===uk;});}else if(pool==='team'){var tval=document.getElementById('lottery-pool-target').value;var parts=tval.split('_');var gid=parts[0],tidx=parseInt(parts[1]);var gt0=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};var gteam=(gt0[gid]||[])[tidx];if(gteam)candidates=gteam.members.map(function(mid){return gm(parseInt(mid));}).filter(Boolean);}if(candidates.length===0){showToast('沒有可抽的會員');return;}count=Math.min(count,candidates.length);var el=document.getElementById('lottery-result');el.className='lottery-result lottery-rolling';var i=0;clearInterval(lotteryTimer);lotteryTimer=setInterval(function(){el.textContent=candidates[Math.floor(Math.random()*candidates.length)].name;i++;if(i>20){clearInterval(lotteryTimer);var winners=candidates.slice().sort(function(){return Math.random()-.5;}).slice(0,count);el.className='lottery-result';el.innerHTML=winners.map(function(m){return m.name;}).join(' / ');if(!Array.isArray(S.lottery))S.lottery=[];S.lottery.unshift({time:nowTime(),winners:winners.map(function(m){return m.name;}),by:adminName});if(S.lottery.length>50)S.lottery=S.lottery.slice(0,50);save();renderLotteryHistory();document.getElementById('lottery-winners').innerHTML=winners.map(function(m){return '🎊 '+m.name+' 🎊';}).join('<br>');openModal('modal-lottery-win');}},80);}
 function renderLotteryHistory(){var el=document.getElementById('lottery-history');if(!el)return;var arr=Array.isArray(S.lottery)?S.lottery:[];if(arr.length===0){el.innerHTML='<div class="empty" style="padding:10px">尚無抽獎紀錄</div>';return;}el.innerHTML=arr.slice(0,20).map(function(l){return '<div class="lh-item"><span>'+l.time+' &nbsp;'+l.winners.join(' / ')+'</span><span style="color:var(--sub);font-size:10px;">'+(l.by||'')+'</span></div>';}).join('');}
 
 // ══ RANK TIERS ══

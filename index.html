@@ -1595,7 +1595,7 @@ function renderTargetSel(){
   var sw=document.getElementById('score-member-search-wrap');var si=document.getElementById('score-member-search');
   if(type==='member'){if(sw)sw.style.display='block';if(si)si.value='';sel.size=5;filterScoreTargetSel();}
   else if(type==='team'){if(sw)sw.style.display='none';sel.size=1;var ts=teamsArray();sel.innerHTML=ts.length===0?'<option>尚無隊伍</option>':ts.map(function(t){return '<option value="'+t.id+'">'+t.name+'</option>';}).join('');}
-  else if(type==='gameTeam'){if(sw)sw.style.display='none';sel.size=4;var gt2=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};var opts='';var gameIds=['g2','g3','g4'];for(var gi=0;gi<gameIds.length;gi++){var gid=gameIds[gi];var teams=(gt2[gid]||[]);for(var ti=0;ti<teams.length;ti++){var tt=teams[ti];opts+='<option value="'+gid+'_'+ti+'">'+tt.name+' ('+tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、')+')</option>';}}sel.innerHTML=opts||'<option>尚無遊戲隊伍</option>';}
+  else if(type==='gameTeam'){if(sw)sw.style.display='none';sel.size=4;var gt2=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};var opts='';var gameIds=['g2','g3','g4','lip','thorn'];for(var gi=0;gi<gameIds.length;gi++){var gid=gameIds[gi];var teams=(gt2[gid]||[]);for(var ti=0;ti<teams.length;ti++){var tt=teams[ti];opts+='<option value="'+gid+'_'+ti+'">'+tt.name+' ('+tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、')+')</option>';}}sel.innerHTML=opts||'<option>尚無遊戲隊伍</option>';}
   else{if(sw)sw.style.display='none';sel.size=1;sel.innerHTML=Object.keys(UNITS).map(function(k){return '<option value="'+k+'">'+UNITS[k].name+'</option>';}).join('');}
 }
 function filterScoreTargetSel(){var q=(document.getElementById('score-member-search').value||'').trim().toLowerCase();var sel=document.getElementById('score-target-sel');var arr=membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');});if(q)arr=arr.filter(function(m){var u=UNITS[m.unit]?UNITS[m.unit].name:'';return m.name.toLowerCase().indexOf(q)>=0||u.indexOf(q)>=0;});sel.innerHTML=arr.length===0?'<option>找不到「'+q+'」</option>':arr.map(function(m){return '<option value="'+m.id+'">'+m.name+'（'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'）</option>';}).join('');if(arr.length>0)sel.selectedIndex=0;}
@@ -1927,37 +1927,80 @@ function buildStationGameCard(g,photos,sn){
     var gt4=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};var myTeams=(gt4[g.id]||[]);
     teamHtml+='<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">👥 組隊（'+g.teamSize+'人一組）</div>';
     if(myTeams.length>0){teamHtml+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">';for(var ti=0;ti<myTeams.length;ti++){var tt=myTeams[ti];teamHtml+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surf);border:1px solid var(--border);"><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">'+tt.name+'</div><div style="font-size:11px;color:var(--sub);">'+tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、')+'</div></div></div>';}teamHtml+='</div>';}
-    if(adminIn){teamHtml+='<button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openCreateGameTeam(\x27'+g.id+'\x27,'+g.teamSize+')">＋ 建立新隊伍</button>';}
-    else if(myTeams.length===0){teamHtml+='<div style="font-size:12px;color:var(--sub);text-align:center;padding:8px;">等待管理員建立隊伍</div>';}
+    if(adminIn||dashMid){teamHtml+='<button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openCreateGameTeam('+JSON.stringify(g.id)+','+g.teamSize+')">＋ 建立新隊伍</button>';}
     teamHtml+='</div>';
   }
   return '<div class="card" style="margin-bottom:12px;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;"><span style="font-size:28px;">'+g.icon+'</span><div><div style="font-size:16px;font-weight:900;color:var(--text);">'+g.name+'</div><div style="font-size:12px;color:var(--sub);margin-top:2px;">'+g.desc+'</div></div></div>'+ph+teamHtml+'</div>';
 }
 
+// ── 第三站子分頁狀態 ──
+var _s3ActiveGame=null;
+var STATION3_GAMES=[
+  {id:'lip',  type:'lip',  name:'\u7121\u8072\u7684\u6bd4\u624b\u5283\u811a', icon:'\ud83d\udc44', color:'#c084fc', desc:'\u7528\u52d5\u4f5c\u548c\u8868\u60c5\u50b3\u9054\u984c\u76ee\u8cc7\u8a0a\uff01', teamSize:5, defaultImg:'images/game-station3-2.jpeg'},
+  {id:'thorn',type:'thorn',name:'\u5982\u8292\u523a\u80cc',                   icon:'\ud83c\udf35', color:'#4ade80', desc:'\u9ed8\u5951\u8207\u89f8\u89ba\u7684\u7d42\u6975\u8003\u9a57\uff01',     teamSize:5, defaultImg:'images/game-station3-1.jpeg'}
+];
+function showStation3Game(gameId){_s3ActiveGame=gameId;renderStation3();}
+function backToStation3(){_s3ActiveGame=null;renderStation3();}
+
 // ══ STATION 3 ══
 function renderStation3(){
   var el=document.getElementById('games-body');if(!el)return;
-  var s3data=(S.missions&&S.missions._station3)?S.missions._station3:{};var now=Date.now();
-  var lipQs=(S.questions&&S.questions.lip)?S.questions.lip:[];var thornQs=(S.questions&&S.questions.thorn)?S.questions.thorn:[];
-  var lipAvail=lipQs.filter(function(q){return!q.usedAt||(now-q.usedAt)>=COOLDOWN_MS;}).length;
-  var thornAvail=thornQs.filter(function(q){return!q.usedAt||(now-q.usedAt)>=COOLDOWN_MS;}).length;
-  var html='<div style="background:linear-gradient(135deg,#2d1b5e 0%,#1a0a2e 100%);border-radius:14px;padding:22px 18px;margin-bottom:16px;border:1px solid rgba(192,132,252,.3);"><div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#c084fc;margin-bottom:6px;">第三站</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;letter-spacing:3px;color:#fff;margin-bottom:6px;">🎤 店競晚會</div><div style="font-size:13px;color:rgba(255,255,255,.7);">兩大挑戰遊戲，考驗觀察與表達能力！</div></div>';
-  var games3=[{type:'lip',name:'👄 無聲的比手劃腳',color:'#c084fc',avail:lipAvail,desc:'用動作和表情傳達題目資訊！',defaultImg:'images/game-station3-2.jpeg'},{type:'thorn',name:'🌵 如芒刺背',color:'#4ade80',avail:thornAvail,desc:'默契與觸覺的終極考驗！',defaultImg:'images/game-station3-1.jpeg'}];
-  for(var gi=0;gi<games3.length;gi++){
-    var g3=games3[gi];var s3photos=s3data[g3.type+'_photos']||[];
-    var ph3='';
-    if(s3photos.length>0){var s3key=registerPhotoSet(s3photos);ph3='<div style="margin:12px 0;"><div style="font-size:11px;color:var(--sub);margin-bottom:8px;font-weight:600;letter-spacing:1px;">📋 遊戲解說</div>';for(var pj=0;pj<s3photos.length;pj++)ph3+='<div style="border-radius:10px;overflow:hidden;cursor:pointer;margin-bottom:8px;border:1px solid var(--border);" onclick="openPhotoSet(\''+s3key+'\','+pj+')"><img src="'+s3photos[pj]+'" style="width:100%;display:block;" loading="lazy"><div style="padding:6px 10px;font-size:11px;color:var(--sub);background:var(--surf);">點擊放大 · 可下載</div></div>';ph3+='</div>';}
-    else if(g3.defaultImg){var dk3=registerPhotoSet([g3.defaultImg]);ph3='<div style="margin:12px 0;"><div style="font-size:11px;color:var(--sub);margin-bottom:8px;font-weight:600;letter-spacing:1px;">📋 遊戲解說</div><div style="border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid var(--border);" onclick="openPhotoSet(\''+dk3+'\',0)"><img src="'+g3.defaultImg+'" style="width:100%;display:block;" loading="lazy"><div style="padding:6px 10px;font-size:11px;color:var(--sub);background:var(--surf);">點擊放大查看</div></div></div>';}
-    else ph3='<div style="margin:10px 0;padding:14px;border-radius:8px;background:var(--surf);border:1px dashed var(--border);font-size:13px;color:var(--sub);text-align:center;">📷 解說圖片由管理員上傳</div>';
-    html+='<div class="card" style="margin-bottom:12px;"><div style="font-size:16px;font-weight:900;color:'+g3.color+';margin-bottom:6px;">'+g3.name+'</div><div style="font-size:12px;color:var(--sub);margin-bottom:10px;">'+g3.desc+'</div>'+ph3+(adminIn?'<div style="display:flex;gap:8px;align-items:center;margin-top:10px;"><button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="switchGame(\''+g3.type+'\');drawGameQuestion();">🎲 隨機抽題</button><button class="btn btn-ghost btn-sm" onclick="resetGameCooldown()">⟳ 重置冷卻</button></div>':'')+'<div style="font-size:11px;color:var(--sub);margin-top:6px;">可用題目：<strong style="color:'+g3.color+';">'+g3.avail+'</strong> 題</div></div>';
-  }
-  html+='<div id="s3-draw-result"></div>';
-  el.innerHTML=html;
-  // Draw stage if exists
-  var stageArea=document.getElementById('s3-draw-result');
-  if(stageArea&&adminIn){stageArea.innerHTML='<div style="background:var(--card);border-radius:14px;padding:20px;text-align:center;margin-top:8px;border:1px solid var(--border);"><div id="game-draw-stage" class="draw-stage draw-stage-lip idle">按下抽題開始</div></div>';}
-}
+  var s3data=(S.missions&&S.missions._station3)?S.missions._station3:{};
+  var now=Date.now();
+  var lipQs=(S.questions&&S.questions.lip)?S.questions.lip:[];
+  var thornQs=(S.questions&&S.questions.thorn)?S.questions.thorn:[];
+  var qAvail={lip:lipQs.filter(function(q){return!q.usedAt||(now-q.usedAt)>=COOLDOWN_MS;}).length,
+              thorn:thornQs.filter(function(q){return!q.usedAt||(now-q.usedAt)>=COOLDOWN_MS;}).length};
 
+  // ── 子頁面：單一遊戲詳情 ──
+  if(_s3ActiveGame){
+    var g=null;
+    for(var si=0;si<STATION3_GAMES.length;si++){if(STATION3_GAMES[si].id===_s3ActiveGame){g=STATION3_GAMES[si];break;}}
+    if(!g){_s3ActiveGame=null;renderStation3();return;}
+    var photos=s3data[g.type+'_photos']||[];
+    var html='<div style="margin-bottom:14px;">'
+      +'<button onclick="backToStation3()" style="display:inline-flex;align-items:center;gap:6px;background:rgba(192,132,252,.12);border:1px solid rgba(192,132,252,.3);border-radius:8px;color:#c084fc;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;touch-action:manipulation;">\u2190 \u8fd4\u56de\u7b2c\u4e09\u7ad9</button>'
+      +'</div>';
+    html+=buildStationGameCard(g,photos,'3');
+    // 抽題區（僅管理員）
+    if(adminIn){
+      html+='<div class="card">'
+        +'<div class="ct">🎲 隨機抽題</div>'
+        +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">'
+        +'<button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="switchGame('+JSON.stringify(g.type)+');drawGameQuestion();">🎲 隨機抽題</button>'
+        +'<button class="btn btn-ghost btn-sm" onclick="resetGameCooldown()">⟳ 重置冷卻</button>'
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--sub);">\u53ef\u7528\u984c\u76ee\uff1a<strong style="color:'+g.color+';">'+qAvail[g.type]+'</strong> \u984c</div>'
+        +'<div id="s3-draw-result" style="margin-top:10px;">'
+        +'<div id="game-draw-stage" class="draw-stage draw-stage-'+g.type+' idle">\u6309\u4e0b\u62bd\u984c\u958b\u59cb</div>'
+        +'</div>'
+        +'</div>';
+    }
+    el.innerHTML=html;
+    return;
+  }
+
+  // ── 選擇頁面：遊戲卡片 Grid ──
+  var html='<div style="background:linear-gradient(135deg,#2d1b5e 0%,#1a0a2e 100%);border-radius:14px;padding:22px 18px;margin-bottom:16px;border:1px solid rgba(192,132,252,.3);">'
+    +'<div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#c084fc;margin-bottom:6px;">STAGE 3</div>'
+    +'<div class="sh-title" style="color:#fff;font-size:28px;margin-bottom:6px;">\ud83c\udf99 \u5e97\u7af6\u665a\u6703</div>'
+    +'<div style="font-size:13px;color:rgba(255,255,255,.7);">\u5169\u5927\u6311\u6230\u904a\u6232\uff0c\u9078\u64c7\u9032\u5165\uff01</div>'
+    +'</div>'
+    +'<div class="s2-game-grid">';
+  for(var i=0;i<STATION3_GAMES.length;i++){
+    var gj=STATION3_GAMES[i];
+    var gt4=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
+    var teamCount=(gt4[gj.id]||[]).length;
+    html+='<div class="s2-game-card" onclick="showStation3Game('+JSON.stringify(gj.id)+')" style="border-color:rgba(192,132,252,.2);">'
+      +'<div class="s2-game-icon">'+gj.icon+'</div>'
+      +'<div class="s2-game-name" style="color:'+gj.color+';">'+gj.name+'</div>'
+      +'<div class="s2-game-desc">'+gj.desc+'</div>'
+      +'<div class="s2-team-badge" style="background:rgba(192,132,252,.12);color:#c084fc;border-color:rgba(192,132,252,.25);">\ud83d\udc65 '+teamCount+' \u968a \u00b7 5\u4eba\u7d44</div>'
+      +'</div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
 // ══ GAME DRAW ══
 function switchGame(type){curGame=type;}
 function drawGameQuestion(){

@@ -1619,7 +1619,7 @@ function renderGameTeamsAdmin(){
     html+='<div class="card" style="margin-bottom:12px;">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
       +'<div class="ct" style="margin-bottom:0;">'+gd.name+' <span style="font-size:11px;color:var(--sub);font-weight:400;">('+gd.teamSize+'人一組)</span></div>'
-      +'<button class="btn btn-primary btn-sm" onclick="adminOpenCreateGameTeam('+JSON.stringify(gd.id)+','+gd.teamSize+')">＋ 新增隊伍</button>'
+      +'<button class="btn btn-primary btn-sm" onclick="adminOpenCreateGameTeam(\''+gd.id+'\','+gd.teamSize+')">＋ 新增隊伍</button>'
       +'</div>';
     if(teams.length===0){
       html+='<div class="empty" style="padding:14px 0;font-size:13px;">尚無隊伍</div>';
@@ -1630,10 +1630,10 @@ function renderGameTeamsAdmin(){
         var memNames=tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、');
         html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:9px;background:var(--surf);border:1px solid var(--border);">'
           +'<div style="flex:1;">'
-          +'<input type="text" value="'+tt.name.replace(/"/g,'&quot;')+'" id="gta-name-'+gd.id+'-'+ti+'" style="font-size:13px;font-weight:700;color:var(--text);background:transparent;border:none;border-bottom:1px dashed var(--border);padding:0 0 2px;width:100%;outline:none;" onblur="saveGameTeamName('+JSON.stringify(gd.id)+','+ti+',this.value)">'
+          +'<input type="text" value="'+tt.name.replace(/"/g,'&quot;')+'" id="gta-name-'+gd.id+'-'+ti+'" style="font-size:13px;font-weight:700;color:var(--text);background:transparent;border:none;border-bottom:1px dashed var(--border);padding:0 0 2px;width:100%;outline:none;" onblur="saveGameTeamName(\''+gd.id+'\','+ti+',this.value)">'
           +'<div style="font-size:11px;color:var(--sub);margin-top:3px;">'+memNames+'</div>'
           +'</div>'
-          +'<button class="btn btn-danger btn-sm" onclick="adminDelGameTeam('+JSON.stringify(gd.id)+','+ti+')">刪除</button>'
+          +'<button class="btn btn-danger btn-sm" onclick="adminDelGameTeam(\''+gd.id+'\','+ti+')">刪除</button>'
           +'</div>';
       }
       html+='</div>';
@@ -2092,7 +2092,7 @@ function renderStation2(){
     var gj=STATION2_GAMES[i];
     var gt4=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
     var teamCount=(gt4[gj.id]||[]).length;
-    html+='<div class="s2-game-card" onclick="showStation2Game('+JSON.stringify(gj.id)+')">'
+    html+='<div class="s2-game-card" onclick="showStation2Game(\''+gj.id+'\')">'
       +'<div class="s2-game-icon">'+gj.icon+'</div>'
       +'<div class="s2-game-name">'+gj.name+'</div>'
       +'<div class="s2-game-desc">'+gj.desc+'</div>';
@@ -2116,7 +2116,7 @@ function buildStationGameCard(g,photos,sn){
     var gt4=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};var myTeams=(gt4[g.id]||[]);
     teamHtml+='<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">👥 組隊（'+g.teamSize+'人一組）</div>';
     if(myTeams.length>0){teamHtml+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">';for(var ti=0;ti<myTeams.length;ti++){var tt=myTeams[ti];teamHtml+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surf);border:1px solid var(--border);"><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">'+tt.name+'</div><div style="font-size:11px;color:var(--sub);">'+tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、')+'</div></div></div>';}teamHtml+='</div>';}
-    if(adminIn||dashMid){teamHtml+='<button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openCreateGameTeam('+JSON.stringify(g.id)+','+g.teamSize+')">＋ 建立新隊伍</button>';}
+    if(adminIn||dashMid){teamHtml+='<button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openCreateGameTeam(\''+g.id+'\','+g.teamSize+')">＋ 建立新隊伍</button>';}
     teamHtml+='</div>';
   }
   return '<div class="card" style="margin-bottom:12px;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;"><span style="font-size:28px;">'+g.icon+'</span><div><div style="font-size:16px;font-weight:900;color:var(--text);">'+g.name+'</div><div style="font-size:12px;color:var(--sub);margin-top:2px;">'+g.desc+'</div></div></div>'+ph+teamHtml+'</div>';
@@ -2156,7 +2156,7 @@ function renderStation3(){
       html+='<div class="card">'
         +'<div class="ct">🎲 隨機抽題</div>'
         +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">'
-        +'<button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="switchGame('+JSON.stringify(g.type)+');drawGameQuestion();">🎲 隨機抽題</button>'
+        +'<button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="switchGame(\''+g.type+'\');drawGameQuestion();">🎲 隨機抽題</button>'
         +'<button class="btn btn-ghost btn-sm" onclick="resetGameCooldown()">⟳ 重置冷卻</button>'
         +'</div>'
         +'<div style="font-size:11px;color:var(--sub);">\u53ef\u7528\u984c\u76ee\uff1a<strong style="color:'+g.color+';">'+qAvail[g.type]+'</strong> \u984c</div>'
@@ -2180,7 +2180,7 @@ function renderStation3(){
     var gj=STATION3_GAMES[i];
     var gt4=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
     var teamCount=(gt4[gj.id]||[]).length;
-    html+='<div class="s2-game-card" onclick="showStation3Game('+JSON.stringify(gj.id)+')" style="border-color:rgba(192,132,252,.2);">'
+    html+='<div class="s2-game-card" onclick="showStation3Game(\''+gj.id+'\')" style="border-color:rgba(192,132,252,.2);">'
       +'<div class="s2-game-icon">'+gj.icon+'</div>'
       +'<div class="s2-game-name" style="color:'+gj.color+';">'+gj.name+'</div>'
       +'<div class="s2-game-desc">'+gj.desc+'</div>'

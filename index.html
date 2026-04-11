@@ -2111,11 +2111,11 @@ function openCreateGameTeam(gameId,teamSize){
   html+='<div><label>選擇成員（'+teamSize+'\u4eba\uff09</label>';
   html+='<input type="text" id="gt-search" placeholder="\u641c\u5c0b\u59d3\u540d\u2026" oninput="filterGTMembers(this.value)" style="margin-bottom:6px;">';
   html+='<div class="ms-list" id="gt-member-list" style="max-height:200px;">';
-  for(var i=0;i<avail.length;i++){var m=avail[i];html+='<div class="ms-item" data-mid="'+m.id+'" data-name="'+m.name+'" onclick="toggleGTMember(this)"><div class="ms-check"></div><div><div class="ms-name">'+m.name+'</div><div class="ms-hint">'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'</div></div></div>';}
+  for(var i=0;i<avail.length;i++){var m=avail[i];var isCreator=(m.id===dashMid);html+='<div class="ms-item'+(isCreator?' checked':'')+'" data-mid="'+m.id+'" data-name="'+m.name+'" onclick="toggleGTMember(this)"><div class="ms-check">'+(isCreator?'✓':'')+'</div><div><div class="ms-name">'+m.name+(isCreator?' (你)':'')+'</div><div class="ms-hint">'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'</div></div></div>';}
   html+='</div></div>';
   html+='<div style="margin-top:12px;display:flex;gap:8px;"><button class="btn btn-ghost" onclick="closeModal(\x27modal-create-gt\x27)">取消</button><button class="btn btn-primary" onclick="confirmCreateGameTeam()">建立隊伍</button></div>';
   var modal=document.getElementById('modal-create-gt');
-  if(!modal){modal=document.createElement('div');modal.className='moverlay';modal.id='modal-create-gt';modal.innerHTML='<div class="mbox"><div class="mtitle">建立遊戲隊伍</div><div id="gt-modal-body"></div></div>';document.body.appendChild(modal);}
+  if(!modal){modal=document.createElement('div');modal.className='moverlay';modal.id='modal-create-gt';modal.innerHTML='<div class="mbox"><div class="mtitle">建立遊戲隊伍</div><div style="font-size:12px;color:var(--sub);margin-bottom:12px;">由隊長組隊，建立者自動成為隊員</div><div id="gt-modal-body"></div></div>';document.body.appendChild(modal);}
   document.getElementById('gt-modal-body').innerHTML=html;modal.classList.add('open');
 }
 function filterGTMembers(q){
@@ -2198,7 +2198,7 @@ function buildStationGameCard(g,photos,sn){
   var teamHtml='';
   if(g.teamSize&&g.teamSize>0){
     var gt4=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};var myTeams=(gt4[g.id]||[]);
-    teamHtml+='<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">👥 組隊（'+g.teamSize+'人一組）</div>';
+    teamHtml+='<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">👥 組隊（'+g.teamSize+'人一組・由隊長組隊）</div>';
     if(myTeams.length>0){teamHtml+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;">';for(var ti=0;ti<myTeams.length;ti++){var tt=myTeams[ti];teamHtml+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surf);border:1px solid var(--border);"><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">'+tt.name+'</div><div style="font-size:11px;color:var(--sub);">'+tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、')+'</div></div></div>';}teamHtml+='</div>';}
     if(adminIn||dashMid){teamHtml+='<button class="btn btn-ghost btn-sm" style="width:100%;" onclick="openCreateGameTeam(\''+g.id+'\','+g.teamSize+')">＋ 建立新隊伍</button>';}
     teamHtml+='</div>';

@@ -2106,7 +2106,9 @@ function openCreateGameTeam(gameId,teamSize){
   var allM=membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');});
   var gt5=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
   var existingMids=[];(gt5[gameId]||[]).forEach(function(t){t.members.forEach(function(mid){existingMids.push(parseInt(mid));});});
-  var avail=allM.filter(function(m){return existingMids.indexOf(m.id)<0;});
+  var creatorM=dashMid?gm(dashMid):null;
+  var isS3=(gameId==='lip'||gameId==='thorn');
+  var avail=allM.filter(function(m){return existingMids.indexOf(m.id)<0&&(!isS3||!creatorM||m.unit===creatorM.unit);});
   var html='<div style="margin-bottom:10px;"><label>隊伍名稱</label><input type="text" id="gt-name" placeholder="輸入隊伍名稱" maxlength="20"></div>';
   html+='<div><label>選擇成員（'+teamSize+'\u4eba\uff09</label>';
   html+='<input type="text" id="gt-search" placeholder="\u641c\u5c0b\u59d3\u540d\u2026" oninput="filterGTMembers(this.value)" style="margin-bottom:6px;">';

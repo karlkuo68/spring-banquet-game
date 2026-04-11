@@ -1168,7 +1168,7 @@ input::placeholder{color:var(--muted);}
   <div class="mbox" style="text-align:center;max-width:400px;">
     <div id="draw-result-icon" style="font-size:44px;margin-bottom:8px;"></div>
     <div id="draw-result-type" style="font-size:12px;color:var(--sub);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;"></div>
-    <div id="draw-result-text" style="font-family:'Noto Sans TC',sans-serif;font-size:22px;font-weight:900;color:var(--text);line-height:1.4;padding:16px 8px;background:var(--surf);border-radius:10px;border:1px solid var(--border);margin-bottom:14px;"></div>
+    <div id="draw-result-text" style="min-height:80px;font-family:'Noto Sans TC',sans-serif;font-size:22px;font-weight:900;color:var(--text);line-height:1.4;padding:16px 8px;background:var(--surf);border-radius:10px;border:1px solid var(--border);margin-bottom:14px;"></div>
     <button class="btn btn-primary" style="width:100%;" onclick="closeModal(&quot;modal-draw-result&quot;)">關閉</button>
   </div>
 </div>
@@ -1687,17 +1687,17 @@ function updateScoreGame(){
     opts+='</optgroup>';
     var gt0=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
     var gDefs=[{id:'g2',name:'\u5b88\u8b77\u8056\u676fII'},{id:'g3',name:'\u904e\u6cb3\u9020\u6a4b'},{id:'g4',name:'\u56db\u4eba\u4e94\u811f'},{id:'lip',name:'\u6bd4\u624b\u5283\u811a'},{id:'thorn',name:'\u5982\u8292\u523a\u80cc'}];
-    var hasTeams=gDefs.some(function(gd){return (gt0[gd.id]||[]).length>0;});
-    if(hasTeams){
-      opts+='<optgroup label="\u2500\u2500 \u904a\u6232\u968a\u4f0d \u2500\u2500">';
-      gDefs.forEach(function(gd){
-        (gt0[gd.id]||[]).forEach(function(tt,tidx){
+    gDefs.forEach(function(gd){
+      var teams=(gt0[gd.id]||[]);
+      if(teams.length>0){
+        opts+='<optgroup label="\u2500\u2500 '+gd.name+' \u2500\u2500">';
+        teams.forEach(function(tt,tidx){
           var names=tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('\u3001');
-          opts+='<option value="t1:'+gd.id+':'+tidx+'">'+gd.name+' \u00b7 '+tt.name+' ('+names+')</option>';
+          opts+='<option value="t1:'+gd.id+':'+tidx+'">'+tt.name+' ('+names+')</option>';
         });
-      });
-      opts+='</optgroup>';
-    }
+        opts+='</optgroup>';
+      }
+    });
   } else if(st==='s2'){
     if(lbl)lbl.textContent='第二層：選遊戲';
     var s2=[{id:'g1',name:'守護聖杯 I（個人賽）'},{id:'g2',name:'守護聖杯 II'},{id:'g3',name:'過河造橋'},{id:'g4',name:'四人五腳'}];
@@ -2226,10 +2226,18 @@ function drawThorn(diff){
   var idx=Math.floor(Math.random()*avail.length);var picked=avail[idx];
   var origIdx=pool.indexOf(picked);_thornUsed[diff][origIdx]=true;
   var labels={easy:'簡單 🟢',medium:'中等 🟡',hard:'困難 🔴'};
-  document.getElementById('draw-result-icon').textContent='🌵';
-  document.getElementById('draw-result-type').textContent='如芒刺背 — '+labels[diff];
-  document.getElementById('draw-result-text').textContent=picked;
+  // 滾動動畫
+  var icon=document.getElementById('draw-result-icon');
+  var type=document.getElementById('draw-result-type');
+  var text=document.getElementById('draw-result-text');
+  icon.textContent='🌵';type.textContent='如芒刺背 — '+labels[diff];
+  text.style.fontSize='48px';
   openModal('modal-draw-result');
+  var roll=0,total=15,timer=setInterval(function(){
+    text.textContent=pool[Math.floor(Math.random()*pool.length)];
+    text.style.opacity=(roll/total<0.7)?'1':'0.6';
+    roll++;if(roll>=total){clearInterval(timer);text.textContent=picked;text.style.opacity='1';}
+  },100);
 }
 function resetThornUsed(){_thornUsed={easy:{},medium:{},hard:{}};showToast('如芒刺背題目已全部重置');}
 
@@ -2253,10 +2261,17 @@ function drawLip(){
   if(avail.length===0){showToast('所有題目都已抽過！');return;}
   var idx=Math.floor(Math.random()*avail.length);var picked=avail[idx];
   var origIdx=LIP_DB.indexOf(picked);_lipUsed[origIdx]=true;
-  document.getElementById('draw-result-icon').textContent='👄';
-  document.getElementById('draw-result-type').textContent='比手劃腳（剩 '+(avail.length-1)+' 題）';
-  document.getElementById('draw-result-text').textContent=picked;
+  var icon=document.getElementById('draw-result-icon');
+  var type=document.getElementById('draw-result-type');
+  var text=document.getElementById('draw-result-text');
+  icon.textContent='👄';type.textContent='比手劃腳（剩 '+(avail.length-1)+' 題）';
+  text.style.fontSize='48px';
   openModal('modal-draw-result');
+  var roll=0,total=15,timer=setInterval(function(){
+    text.textContent=LIP_DB[Math.floor(Math.random()*LIP_DB.length)];
+    text.style.opacity=(roll/total<0.7)?'1':'0.6';
+    roll++;if(roll>=total){clearInterval(timer);text.textContent=picked;text.style.opacity='1';}
+  },100);
 }
 function resetLipUsed(){_lipUsed={};showToast('比手劃腳題目已全部重置（共 '+LIP_DB.length+' 題）');}
 
@@ -2292,16 +2307,11 @@ function renderStation3(){
     // 抽題區（僅管理員）
     if(adminIn){
       html+='<div class="card">'
-        +'<div class="ct">🎲 隨機抽題</div>'
+        +(adminIn?'<div class="ct">🎲 隨機抽題</div>'
         +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">'
         +(g.type==='thorn'?'<div style="display:flex;flex-direction:column;gap:8px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">🌵 選擇難度抽題</div><div style="display:flex;gap:8px;"><button class="btn btn-success" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'easy\')">🟢 簡單</button><button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'medium\')">🟡 中等</button><button class="btn btn-danger" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'hard\')">🔴 困難</button></div><div style="display:flex;gap:8px;margin-top:4px;"><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="resetThornUsed()">⟳ 重置題目</button></div></div>':'<div style="display:flex;flex-direction:column;gap:8px;"><button class="btn btn-primary" style="width:100%;font-size:14px;padding:12px;" onclick="drawLip()">🎲 隨機抽題（'+LIP_DB.filter(function(q,i){return!_lipUsed[i];}).length+' 題可用）</button><button class="btn btn-ghost btn-sm" onclick="resetLipUsed()">⟳ 重置題目</button></div>')
-        +'<button class="btn btn-ghost btn-sm" onclick="resetGameCooldown()">⟳ 重置冷卻</button>'
         +'</div>'
-        +'<div style="font-size:11px;color:var(--sub);">\u53ef\u7528\u984c\u76ee\uff1a<strong style="color:'+g.color+';">'+qAvail[g.type]+'</strong> \u984c</div>'
-        +'<div id="s3-draw-result" style="margin-top:10px;">'
-        +'<div id="game-draw-stage" class="draw-stage draw-stage-'+g.type+' idle">\u6309\u4e0b\u62bd\u984c\u958b\u59cb</div>'
-        +'</div>'
-        +'</div>';
+        +'</div>':'');
     }
     el.innerHTML=html;
     return;

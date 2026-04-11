@@ -2211,6 +2211,28 @@ function buildStationGameCard(g,photos,sn){
   return '<div class="card" style="margin-bottom:12px;"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;"><span style="font-size:28px;">'+g.icon+'</span><div><div style="font-size:16px;font-weight:900;color:var(--text);">'+g.name+'</div><div style="font-size:12px;color:var(--sub);margin-top:2px;">'+g.desc+'</div></div></div>'+ph+teamHtml+'</div>';
 }
 
+
+// ══ 如芒刺背題庫 ══
+var THORN_DB = {
+  easy: ['129','476','789','328','654','987','147','258','369','741','852','963','159','357','753','951','246','135','579','864'],
+  medium: ['BOOK','LOVE','TIME','GAME','STAR','MOON','FIRE','SNOW','WIND','TREE','BIRD','FISH','BLUE','PINK','GOLD','WORK','PLAY','HOPE','RAIN','CATS'],
+  hard: ['家','展','座','拿','效','書','根','氣','海','烏','班','站','笑','粉','缺','翁','翅','能','般','記']
+};
+var _thornUsed={easy:{},medium:{},hard:{}};
+function drawThorn(diff){
+  var pool=THORN_DB[diff];if(!pool||pool.length===0)return;
+  var avail=pool.filter(function(q,i){return!_thornUsed[diff][i];});
+  if(avail.length===0){showToast('此難度所有題目都已抽過！');return;}
+  var idx=Math.floor(Math.random()*avail.length);var picked=avail[idx];
+  var origIdx=pool.indexOf(picked);_thornUsed[diff][origIdx]=true;
+  var labels={easy:'簡單 🟢',medium:'中等 🟡',hard:'困難 🔴'};
+  document.getElementById('draw-result-icon').textContent='🌵';
+  document.getElementById('draw-result-type').textContent='如芒刺背 — '+labels[diff];
+  document.getElementById('draw-result-text').textContent=picked;
+  openModal('modal-draw-result');
+}
+function resetThornUsed(){_thornUsed={easy:{},medium:{},hard:{}};showToast('如芒刺背題目已全部重置');}
+
 // ── 第三站子分頁狀態 ──
 var _s3ActiveGame=null;
 var STATION3_GAMES=[
@@ -2245,7 +2267,7 @@ function renderStation3(){
       html+='<div class="card">'
         +'<div class="ct">🎲 隨機抽題</div>'
         +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">'
-        +'<button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="switchGame(\''+g.type+'\');drawGameQuestion();">🎲 隨機抽題</button>'
+        +(g.type==='thorn'?'<div style="display:flex;flex-direction:column;gap:8px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">🌵 選擇難度抽題</div><div style="display:flex;gap:8px;"><button class="btn btn-success" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'easy\')">🟢 簡單</button><button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'medium\')">🟡 中等</button><button class="btn btn-danger" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'hard\')">🔴 困難</button></div><div style="display:flex;gap:8px;margin-top:4px;"><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="resetThornUsed()">⟳ 重置題目</button></div></div>':'<button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="switchGame(\''+g.type+'\');drawGameQuestion();">🎲 隨機抽題</button>')
         +'<button class="btn btn-ghost btn-sm" onclick="resetGameCooldown()">⟳ 重置冷卻</button>'
         +'</div>'
         +'<div style="font-size:11px;color:var(--sub);">\u53ef\u7528\u984c\u76ee\uff1a<strong style="color:'+g.color+';">'+qAvail[g.type]+'</strong> \u984c</div>'

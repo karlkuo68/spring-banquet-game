@@ -2233,6 +2233,33 @@ function drawThorn(diff){
 }
 function resetThornUsed(){_thornUsed={easy:{},medium:{},hard:{}};showToast('如芒刺背題目已全部重置');}
 
+
+// ══ 比手劃腳題庫 ══
+var LIP_DB = [
+  '牛肉麵','滷肉飯','雞肉飯','蚵仔煎','臭豆腐','鹹酥雞','甜不辣','豬血糕','蔥油餅','車輪餅',
+  '紅豆餅','雞蛋糕','胡椒餅','糯米腸','烤香腸','擔仔麵','炸醬麵','小籠包','水煎包','爌肉飯',
+  '排骨飯','炒米粉','肉羹麵','乾拌麵','咖哩飯','三明治','漢堡肉','廣東粥','皮蛋粥','海鮮粥',
+  '親子丼','豬排丼','天婦羅','章魚燒',
+  '冰淇淋','甜甜圈','巧克力','布朗尼','馬卡龍','舒芙蕾','瑪德蓮','費南雪','蒙布朗','雞蛋仔',
+  '仙草凍','愛玉冰','芒果冰','八寶粥','鳳梨酥','蛋黃酥','太陽餅','牛舌餅','綠豆椪','狀元糕',
+  '鯛魚燒','銅鑼燒','黑糖糕','芝麻球','糖葫蘆','爆米花','地瓜球',
+  '冬瓜茶','水果茶','烏龍茶','普洱茶','綠豆沙','檸檬汁','西瓜汁','柳橙汁','楊桃汁',
+  '餛飩湯','貢丸湯','蛋花湯','酸辣湯','玉米湯','味噌湯','魚丸湯','蛤蜊湯','豬肝湯',
+  '火龍果','奇異果','水蜜桃','哈密瓜','百香果','西洋梨','葡萄柚','蔓越莓','覆盆子','釋迦果'
+];
+var _lipUsed={};
+function drawLip(){
+  var avail=LIP_DB.filter(function(q,i){return!_lipUsed[i];});
+  if(avail.length===0){showToast('所有題目都已抽過！');return;}
+  var idx=Math.floor(Math.random()*avail.length);var picked=avail[idx];
+  var origIdx=LIP_DB.indexOf(picked);_lipUsed[origIdx]=true;
+  document.getElementById('draw-result-icon').textContent='👄';
+  document.getElementById('draw-result-type').textContent='比手劃腳（剩 '+(avail.length-1)+' 題）';
+  document.getElementById('draw-result-text').textContent=picked;
+  openModal('modal-draw-result');
+}
+function resetLipUsed(){_lipUsed={};showToast('比手劃腳題目已全部重置（共 '+LIP_DB.length+' 題）');}
+
 // ── 第三站子分頁狀態 ──
 var _s3ActiveGame=null;
 var STATION3_GAMES=[
@@ -2267,7 +2294,7 @@ function renderStation3(){
       html+='<div class="card">'
         +'<div class="ct">🎲 隨機抽題</div>'
         +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">'
-        +(g.type==='thorn'?'<div style="display:flex;flex-direction:column;gap:8px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">🌵 選擇難度抽題</div><div style="display:flex;gap:8px;"><button class="btn btn-success" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'easy\')">🟢 簡單</button><button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'medium\')">🟡 中等</button><button class="btn btn-danger" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'hard\')">🔴 困難</button></div><div style="display:flex;gap:8px;margin-top:4px;"><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="resetThornUsed()">⟳ 重置題目</button></div></div>':'<button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="switchGame(\''+g.type+'\');drawGameQuestion();">🎲 隨機抽題</button>')
+        +(g.type==='thorn'?'<div style="display:flex;flex-direction:column;gap:8px;"><div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">🌵 選擇難度抽題</div><div style="display:flex;gap:8px;"><button class="btn btn-success" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'easy\')">🟢 簡單</button><button class="btn btn-primary" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'medium\')">🟡 中等</button><button class="btn btn-danger" style="flex:1;font-size:14px;padding:12px;" onclick="drawThorn(\'hard\')">🔴 困難</button></div><div style="display:flex;gap:8px;margin-top:4px;"><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="resetThornUsed()">⟳ 重置題目</button></div></div>':'<div style="display:flex;flex-direction:column;gap:8px;"><button class="btn btn-primary" style="width:100%;font-size:14px;padding:12px;" onclick="drawLip()">🎲 隨機抽題（'+LIP_DB.filter(function(q,i){return!_lipUsed[i];}).length+' 題可用）</button><button class="btn btn-ghost btn-sm" onclick="resetLipUsed()">⟳ 重置題目</button></div>')
         +'<button class="btn btn-ghost btn-sm" onclick="resetGameCooldown()">⟳ 重置冷卻</button>'
         +'</div>'
         +'<div style="font-size:11px;color:var(--sub);">\u53ef\u7528\u984c\u76ee\uff1a<strong style="color:'+g.color+';">'+qAvail[g.type]+'</strong> \u984c</div>'

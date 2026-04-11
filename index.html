@@ -797,23 +797,31 @@ input::placeholder{color:var(--muted);}
       <button class="btn btn-ghost btn-sm" onclick="adminLogout()">登出</button>
     </div>
 
-    <!-- 後台分頁 Tab -->
+    <!-- 後台分頁 Tab（5個）-->
     <div class="admin-tabs">
+      <button id="admin-tabBtn-unit" class="admin-tab-btn" onclick="switchAdminTab('unit')">🏛 單位管理</button>
       <button id="admin-tabBtn-team" class="admin-tab-btn" onclick="switchAdminTab('team')">👥 隊伍管理</button>
       <button id="admin-tabBtn-member" class="admin-tab-btn" onclick="switchAdminTab('member')">📋 會員管理</button>
       <button id="admin-tabBtn-settings" class="admin-tab-btn" onclick="switchAdminTab('settings')">⚙️ 遊戲設定</button>
       <button id="admin-tabBtn-game" class="admin-tab-btn active" onclick="switchAdminTab('game')">🎮 遊戲管理</button>
     </div>
 
-    <!-- ─── Tab 1: 隊伍管理 ─── -->
-    <div id="admin-tab-team" style="display:none;">
+    <!-- ─── Tab 1: 單位管理（原隊伍管理） ─── -->
+    <div id="admin-tab-unit" style="display:none;">
       <div class="card">
-        <div class="ct">隊伍成員管理</div>
+        <div class="ct">單位成員管理</div>
         <div class="team-grid" id="admin-team-list"></div>
       </div>
     </div>
 
-    <!-- ─── Tab 2: 會員管理 ─── -->
+    <!-- ─── Tab 2: 隊伍管理（遊戲隊伍） ─── -->
+    <div id="admin-tab-team" style="display:none;">
+      <div id="admin-game-teams-section">
+        <div class="empty" style="padding:28px 0;">載入中…</div>
+      </div>
+    </div>
+
+    <!-- ─── Tab 3: 會員管理 ─── -->
     <div id="admin-tab-member" style="display:none;">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;flex-wrap:wrap;">
@@ -923,32 +931,35 @@ input::placeholder{color:var(--muted);}
 
     <!-- ─── Tab 4: 遊戲管理 ─── -->
     <div id="admin-tab-game" style="display:block;">
-      <!-- 積分調整 + 紀錄 -->
+      <!-- 積分調整（三層選擇）+ 紀錄 -->
+      <!-- 隱藏舊元素供 renderTargetSel 向下相容 -->
+      <select id="score-target-type" style="display:none;"><option value="member">個人</option></select>
+      <div id="score-member-search-wrap" style="display:none;"><input type="text" id="score-member-search"></div>
       <div class="agrid">
         <div class="card">
           <div class="ct">積分調整</div>
-          <div><label>對象</label>
-            <select id="score-target-type" onchange="renderTargetSel()">
-              <option value="member">個人</option>
-              <option value="team">隊伍（均分）</option>
-              <option value="unit">單位全體（均分）</option>
-              <option value="gameTeam">遊戲隊伍（全隊同分）</option>
+          <!-- 第一層：選站 -->
+          <div style="margin-bottom:9px;"><label>第一層：選站</label>
+            <select id="score-station" onchange="updateScoreGame()">
+              <option value="s1">🌸 第一站（任務關卡）</option>
+              <option value="s2">🌿 第二站（組隊遊戲）</option>
+              <option value="s3">🎤 第三站（晚會遊戲）</option>
             </select>
           </div>
-          <div style="margin-top:9px;" id="score-target-wrap">
-            <label>選擇</label>
-            <div id="score-member-search-wrap" style="position:relative;">
-              <input type="text" id="score-member-search" placeholder="搜尋姓名…"
-                oninput="filterScoreTargetSel()"
-                style="margin-bottom:5px;">
-              <select id="score-target-sel" size="4"
-                style="border-radius:8px;padding:4px 0;background:var(--surf);"></select>
-            </div>
+          <!-- 第二層：選遊戲 -->
+          <div style="margin-bottom:9px;"><label>第二層：選遊戲</label>
+            <select id="score-game" onchange="updateScoreTeam()"></select>
           </div>
-          <div style="margin-top:9px;"><label>分數</label>
+          <!-- 第三層：選隊伍/對象 -->
+          <div style="margin-bottom:9px;"><label>第三層：選隊伍 / 對象</label>
+            <input type="text" id="score-team-search" placeholder="搜尋…" oninput="filterScoreTeamSel()" style="margin-bottom:5px;">
+            <select id="score-target-sel" size="4" style="border-radius:8px;padding:4px 0;background:var(--surf);width:100%;"></select>
+          </div>
+          <!-- 分數 -->
+          <div style="margin-top:9px;"><label>分數（全隊同分）</label>
             <div class="numwrap">
               <button class="nbtn" onclick="adjNum('score-delta',-10)">−</button>
-              <input type="number" id="score-delta" value="10" min="10" max="50" step="10">
+              <input type="number" id="score-delta" value="10" min="10" max="200" step="10">
               <button class="nbtn" onclick="adjNum('score-delta',10)">＋</button>
             </div>
             <div class="qbtns">
@@ -959,15 +970,15 @@ input::placeholder{color:var(--muted);}
               <button class="qbtn" onclick="setDelta(50)">50</button>
             </div>
           </div>
-          <div style="margin-top:9px;"><label>備註</label><input type="text" id="score-note" placeholder="e.g. 闖關獎勵"></div>
+          <div style="margin-top:9px;"><label>備註</label><input type="text" id="score-note" placeholder="e.g. 第二站第一名"></div>
           <div style="display:flex;gap:7px;margin-top:11px;">
-            <button class="btn btn-success" style="flex:1" onclick="applyScore(1)">＋ 加分</button>
-            <button class="btn btn-danger" style="flex:1" onclick="applyScore(-1)">－ 扣分</button>
+            <button class="btn btn-success" style="flex:1" onclick="applyScoreNew(1)">＋ 加分</button>
+            <button class="btn btn-danger" style="flex:1" onclick="applyScoreNew(-1)">－ 扣分</button>
           </div>
         </div>
         <div class="card"><div class="ct">積分紀錄</div><div class="loglist" id="score-log"></div></div>
       </div>
-      <!-- 倒數計時器 (NEW) -->
+            <!-- 倒數計時器 (NEW) -->
       <div class="card">
         <div class="ct">⏱ 倒數計時器</div>
         <div id="cd-display" class="cd-display">00:00</div>
@@ -1579,7 +1590,7 @@ function adminLogout(){adminIn=false;adminName='';saveSession();renderNav('dashb
 var _adminTab='game';
 function switchAdminTab(tab){
   _adminTab=tab;
-  var tabs=['team','member','settings','game'];
+  var tabs=['unit','team','member','settings','game'];
   tabs.forEach(function(t){
     var el=document.getElementById('admin-tab-'+t);
     var btn=document.getElementById('admin-tabBtn-'+t);
@@ -1588,7 +1599,151 @@ function switchAdminTab(tab){
   });
 }
 
-function renderAdminContent(){if(!adminIn)return;renderTargetSel();renderAdminTeamList();renderAdminMemberTb();renderLogList();renderLotteryUI();renderQuestionsAdmin();renderRankTierList();renderMissionAdmin();renderStation2Admin();switchAdminTab(_adminTab);}
+function renderAdminContent(){if(!adminIn)return;renderTargetSel();renderAdminTeamList();renderAdminMemberTb();renderLogList();renderLotteryUI();renderQuestionsAdmin();renderRankTierList();renderMissionAdmin();renderStation2Admin();renderGameTeamsAdmin();initScoreCascade();switchAdminTab(_adminTab);}
+
+// ══ 後台「隊伍管理」Tab：所有遊戲隊伍 ══
+var ALL_GAME_DEFS=[
+  {id:'g2',name:'守護聖杯 II',teamSize:2},
+  {id:'g3',name:'過河造橋',teamSize:3},
+  {id:'g4',name:'四人五腳',teamSize:4},
+  {id:'lip',name:'無聲的比手劃腳',teamSize:5},
+  {id:'thorn',name:'如芒刺背',teamSize:5}
+];
+function renderGameTeamsAdmin(){
+  var el=document.getElementById('admin-game-teams-section');if(!el)return;
+  var gt=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
+  var html='';
+  for(var gi=0;gi<ALL_GAME_DEFS.length;gi++){
+    var gd=ALL_GAME_DEFS[gi];
+    var teams=gt[gd.id]||[];
+    html+='<div class="card" style="margin-bottom:12px;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+      +'<div class="ct" style="margin-bottom:0;">'+gd.name+' <span style="font-size:11px;color:var(--sub);font-weight:400;">('+gd.teamSize+'人一組)</span></div>'
+      +'<button class="btn btn-primary btn-sm" onclick="adminOpenCreateGameTeam('+JSON.stringify(gd.id)+','+gd.teamSize+')">＋ 新增隊伍</button>'
+      +'</div>';
+    if(teams.length===0){
+      html+='<div class="empty" style="padding:14px 0;font-size:13px;">尚無隊伍</div>';
+    } else {
+      html+='<div style="display:flex;flex-direction:column;gap:6px;">';
+      for(var ti=0;ti<teams.length;ti++){
+        var tt=teams[ti];
+        var memNames=tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、');
+        html+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:9px;background:var(--surf);border:1px solid var(--border);">'
+          +'<div style="flex:1;">'
+          +'<input type="text" value="'+tt.name.replace(/"/g,'&quot;')+'" id="gta-name-'+gd.id+'-'+ti+'" style="font-size:13px;font-weight:700;color:var(--text);background:transparent;border:none;border-bottom:1px dashed var(--border);padding:0 0 2px;width:100%;outline:none;" onblur="saveGameTeamName('+JSON.stringify(gd.id)+','+ti+',this.value)">'
+          +'<div style="font-size:11px;color:var(--sub);margin-top:3px;">'+memNames+'</div>'
+          +'</div>'
+          +'<button class="btn btn-danger btn-sm" onclick="adminDelGameTeam('+JSON.stringify(gd.id)+','+ti+')">刪除</button>'
+          +'</div>';
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+  }
+  el.innerHTML=html;
+}
+function saveGameTeamName(gid,tidx,newName){
+  newName=newName.trim();if(!newName)return;
+  if(!S.missions)S.missions={};if(!S.missions._gameTeams)S.missions._gameTeams={};
+  if(!S.missions._gameTeams[gid]||!S.missions._gameTeams[gid][tidx])return;
+  S.missions._gameTeams[gid][tidx].name=newName;
+  saveMissions();showToast('隊名已更新');
+}
+function adminDelGameTeam(gid,tidx){
+  if(!confirm('確定刪除這個隊伍？'))return;
+  if(!S.missions||!S.missions._gameTeams||!S.missions._gameTeams[gid])return;
+  S.missions._gameTeams[gid].splice(tidx,1);
+  saveMissions();renderGameTeamsAdmin();renderStation2();renderStation3();showToast('已刪除隊伍');
+}
+function adminOpenCreateGameTeam(gid,teamSize){
+  openCreateGameTeam(gid,teamSize);
+}
+
+// ══ 積分調整三層選擇 ══
+var _scoreAllItems=[];
+function initScoreCascade(){
+  updateScoreGame();
+}
+function updateScoreGame(){
+  var station=document.getElementById('score-station');if(!station)return;
+  var sel=document.getElementById('score-game');if(!sel)return;
+  var st=station.value;
+  var opts='';
+  if(st==='s1'){
+    opts='<option value="unit">按單位（全單位成員）</option><option value="member">按個人</option>';
+  } else if(st==='s2'){
+    var s2=[{id:'g1',name:'守護聖杯 I（個人賽）'},{id:'g2',name:'守護聖杯 II'},{id:'g3',name:'過河造橋'},{id:'g4',name:'四人五腳'}];
+    opts=s2.map(function(g){return '<option value="'+g.id+'">'+g.name+'</option>';}).join('');
+  } else {
+    opts='<option value="lip">無聲的比手劃腳</option><option value="thorn">如芒刺背</option>';
+  }
+  sel.innerHTML=opts;
+  updateScoreTeam();
+}
+function updateScoreTeam(){
+  var station=document.getElementById('score-station');if(!station)return;
+  var game=document.getElementById('score-game');if(!game)return;
+  var sel=document.getElementById('score-target-sel');if(!sel)return;
+  var st=station.value,gid=game.value;
+  _scoreAllItems=[];
+  if(st==='s1'&&gid==='member'){
+    membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');}).forEach(function(m){
+      _scoreAllItems.push({val:'m:'+m.id,label:m.name+'（'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'）'});
+    });
+  } else if(st==='s1'&&gid==='unit'){
+    Object.keys(UNITS).forEach(function(k){
+      _scoreAllItems.push({val:'u:'+k,label:UNITS[k].name});
+    });
+  } else if(gid==='g1'){
+    // g1 個人賽
+    membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');}).forEach(function(m){
+      _scoreAllItems.push({val:'m:'+m.id,label:m.name+'（'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'）'});
+    });
+  } else {
+    // game teams
+    var gt=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
+    var teams=gt[gid]||[];
+    var gameName={g2:'守護聖杯II',g3:'過河造橋',g4:'四人五腳',lip:'比手劃腳',thorn:'如芒刺背'}[gid]||gid;
+    teams.forEach(function(tt,tidx){
+      var names=tt.members.map(function(mid){var mm=gm(parseInt(mid));return mm?mm.name:'?';}).join('、');
+      _scoreAllItems.push({val:'gt:'+gid+':'+tidx,label:tt.name+' — '+names});
+    });
+    if(teams.length===0)_scoreAllItems.push({val:'',label:'（此遊戲尚無隊伍）'});
+  }
+  filterScoreTeamSel();
+}
+function filterScoreTeamSel(){
+  var q=(document.getElementById('score-team-search').value||'').trim().toLowerCase();
+  var sel=document.getElementById('score-target-sel');if(!sel)return;
+  var items=_scoreAllItems;
+  if(q)items=items.filter(function(it){return it.label.toLowerCase().indexOf(q)>=0;});
+  sel.innerHTML=items.map(function(it){return '<option value="'+it.val+'">'+it.label+'</option>';}).join('');
+  if(items.length>0)sel.selectedIndex=0;
+}
+function applyScoreNew(sign){
+  var sel=document.getElementById('score-target-sel');if(!sel||!sel.value){showToast('請選擇對象');return;}
+  var val=sel.value;if(val==='')return;
+  var abs=Math.min(200,Math.max(10,Math.round(Math.abs(parseInt(document.getElementById('score-delta').value)||10)/10)*10));
+  var delta=abs*sign;
+  var note=document.getElementById('score-note').value.trim();
+  var label='';
+  if(val.indexOf('m:')=== 0){
+    var mid=parseInt(val.slice(2));var mm=gm(mid);if(!mm){showToast('找不到此成員');return;}
+    mm.score=(mm.score||0)+delta;S.members[mm.id]=mm;label=mm.name;
+  } else if(val.indexOf('u:')=== 0){
+    var uk=val.slice(2);var uMems=membersArray().filter(function(m){return m.unit===uk;});
+    if(uMems.length===0){showToast('該單位無成員');return;}
+    uMems.forEach(function(m){m.score=(m.score||0)+delta;S.members[m.id]=m;});
+    label=(UNITS[uk]?UNITS[uk].name:uk)+'全體（各+'+delta+'）';
+  } else if(val.indexOf('gt:')=== 0){
+    var parts=val.split(':');var gid=parts[1];var tidx=parseInt(parts[2]);
+    var gt2=S.missions&&S.missions._gameTeams?S.missions._gameTeams:{};
+    var gteam=(gt2[gid]||[])[tidx];if(!gteam){showToast('找不到此隊伍');return;}
+    gteam.members.forEach(function(id){var m=gm(parseInt(id));if(m){m.score=(m.score||0)+delta;S.members[m.id]=m;}});
+    label=gteam.name+'全員（各'+(delta>=0?'+':'')+delta+'）';
+  } else {showToast('請選擇對象');return;}
+  addLog(label,delta,note);save();renderAdminContent();renderMembersPage();showToast((delta>=0?'+':'')+delta+' 分已套用');
+}
 
 function renderTargetSel(){
   var type=document.getElementById('score-target-type').value;var sel=document.getElementById('score-target-sel');
@@ -1752,6 +1907,39 @@ function markQ3Done(uk){
   saveMissions();renderMissionsPage();if(adminIn)renderAdminContent();
   showToast('🎉 恭喜完成所有任務！全隊各得 30 分！');
 }
+// ══ 第一站：投票選隊長 ══
+function voteLeader(uk,candidateId){
+  if(!dashMid){showToast('請先登入');return;}
+  if(!S.missions)S.missions={};if(!S.missions._leaderVotes)S.missions._leaderVotes={};if(!S.missions._leaderVotes[uk])S.missions._leaderVotes[uk]={};
+  S.missions._leaderVotes[uk][String(dashMid)]=candidateId;
+  var votes=S.missions._leaderVotes[uk];var tally={};
+  Object.keys(votes).forEach(function(vid){var cid=String(votes[vid]);tally[cid]=(tally[cid]||0)+1;});
+  var maxV=0,winnerId=null;Object.keys(tally).forEach(function(cid){if(tally[cid]>maxV){maxV=tally[cid];winnerId=parseInt(cid);}});
+  var team=getUnitTeam(uk);if(team&&winnerId){team.leaderId=winnerId;S.teams[team.id]=team;}
+  saveMissions();save();renderMissionsPage();var cm=gm(candidateId);showToast('已投票給 '+(cm?cm.name:candidateId));
+}
+function buildVotingSection(uk,team){
+  if(!team)return '';
+  var votes=S.missions&&S.missions._leaderVotes&&S.missions._leaderVotes[uk]?S.missions._leaderVotes[uk]:{};
+  var members=(team.members||[]).map(function(id){return gm(parseInt(id));}).filter(Boolean);
+  var tally={};Object.keys(votes).forEach(function(vid){var cid=String(votes[vid]);tally[cid]=(tally[cid]||0)+1;});
+  var myVote=dashMid?parseInt(votes[String(dashMid)]||0):0;
+  var html='<div class="card" style="margin-bottom:12px;border-color:rgba(240,180,41,.3);"><div class="ct" style="color:var(--accent)">🗳 投票選隊長</div>';
+  if(members.length===0){html+='<div style="font-size:13px;color:var(--sub);">此單位尚無成員</div>';}
+  else{
+    html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">';
+    for(var i=0;i<members.length;i++){
+      var m=members[i];var cnt=tally[String(m.id)]||0;var isMyVote=myVote&&myVote===m.id;var isLeader=team.leaderId&&parseInt(team.leaderId)===m.id;
+      var canVote=dashMid&&!adminIn;
+      html+='<button '+(canVote?'onclick="voteLeader(\''+uk+'\','+m.id+')"':'')+' style="padding:7px 12px;border-radius:20px;border:2px solid '+(isMyVote?'var(--accent)':'var(--border)')+';background:'+(isMyVote?'rgba(240,180,41,.15)':'var(--surf)')+';color:var(--text);font-size:13px;cursor:'+(canVote?'pointer':'default')+';">'+(isLeader?'★ ':'')+m.name+(cnt>0?' <span style="font-size:11px;color:var(--accent);">('+cnt+'票)</span>':'')+' </button>';
+    }
+    html+='</div>';
+    if(team.leaderId){var lm=gm(parseInt(team.leaderId));html+='<div style="font-size:12px;color:var(--sub);">目前隊長：<strong style="color:var(--accent);">'+(lm?lm.name:'—')+'</strong></div>';}
+    else html+='<div style="font-size:12px;color:var(--sub);">尚未選出隊長（票數最多者自動成為隊長）</div>';
+    if(myVote&&!adminIn){var vm=gm(myVote);html+='<div style="font-size:11px;color:var(--sub);margin-top:4px;">你的票：'+(vm?vm.name:'—')+'</div>';}
+  }
+  return html+'</div>';
+}
 function renderMissionsPage(){
   var el=document.getElementById('missions-body');if(!el)return;
   if(!dashMid&&!adminIn){el.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:12px;text-align:center;"><div style="font-size:40px;">🗺</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:24px;letter-spacing:2px;color:var(--accent);">任務關卡</div><p style="color:var(--sub);font-size:13px;">請先在「首頁」選擇你的帳號</p></div>';return;}
@@ -1761,6 +1949,7 @@ function renderMissionsPage(){
     var uk=viewUnits[v];var ms=getMissionState(uk);var unitColor=UNIT_COLORS[uk];var unitName=UNIT_NAMES[uk];
     var team=getUnitTeam(uk);var leaderM=team&&team.leaderId?gm(parseInt(team.leaderId)):null;var canOp=isAdmin||(myUk===uk&&canOperateMission());
     html+='<div style="margin-bottom:24px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:12px;height:12px;border-radius:50%;background:'+unitColor+';flex-shrink:0;"></div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;letter-spacing:2px;color:'+unitColor+';">'+unitName+'</div>'+(leaderM?'<span style="font-size:11px;color:var(--sub);">隊長：'+leaderM.name+'</span>':'')+'</div>';
+    html+=buildVotingSection(uk,team);
     // Q1
     var q1Active=!!ms.loc1,q1Done=!!ms.loc1Done,q1Photos=ms.loc1Photos||[];var q1Status=!q1Active?'wait':(q1Done?'done':'doing');
     var locRefPhoto=LOCATION_PHOTOS[ms.loc1]||null;if(S.missions&&S.missions._locPhotos){var allLocs=(S.missions&&S.missions._locations)||DEFAULT_LOCATIONS;var locIdx=allLocs.indexOf(ms.loc1);if(locIdx>=0&&S.missions._locPhotos[locIdx])locRefPhoto=S.missions._locPhotos[locIdx];}
@@ -1866,7 +2055,7 @@ function confirmCreateGameTeam(){
   var mids=[];checked.forEach(function(el){mids.push(parseInt(el.getAttribute('data-mid')));});
   if(!S.missions)S.missions={};if(!S.missions._gameTeams)S.missions._gameTeams={};if(!S.missions._gameTeams[_curGameTeamId])S.missions._gameTeams[_curGameTeamId]=[];
   S.missions._gameTeams[_curGameTeamId].push({name:name,members:mids});
-  saveMissions();closeModal('modal-create-gt');renderStation2();showToast('隊伍「'+name+'」已建立');
+  saveMissions();closeModal('modal-create-gt');renderStation2();renderStation3();if(adminIn)renderGameTeamsAdmin();showToast('隊伍「'+name+'」已建立');
 }
 
 // ── 第二站子分頁狀態 ──

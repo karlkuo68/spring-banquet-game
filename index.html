@@ -2111,7 +2111,10 @@ function openCreateGameTeam(gameId,teamSize){
   html+='<div><label>選擇成員（'+teamSize+'\u4eba\uff09</label>';
   html+='<input type="text" id="gt-search" placeholder="\u641c\u5c0b\u59d3\u540d\u2026" oninput="filterGTMembers(this.value)" style="margin-bottom:6px;">';
   html+='<div class="ms-list" id="gt-member-list" style="max-height:200px;">';
-  for(var i=0;i<avail.length;i++){var m=avail[i];var isCreator=(m.id===dashMid);html+='<div class="ms-item'+(isCreator?' checked':'')+'" data-mid="'+m.id+'" data-name="'+m.name+'" onclick="toggleGTMember(this)"><div class="ms-check">'+(isCreator?'✓':'')+'</div><div><div class="ms-name">'+m.name+(isCreator?' (你)':'')+'</div><div class="ms-hint">'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'</div></div></div>';}
+  var creatorUnit=dashMid&&gm(dashMid)?gm(dashMid).unit:null;
+  var isS3=(gameId==='lip'||gameId==='thorn');
+  var preCount=0;
+  for(var i=0;i<avail.length;i++){var m=avail[i];var isCreator=(m.id===dashMid);var isSameUnit=(isS3&&creatorUnit&&m.unit===creatorUnit&&preCount<teamSize);var preCheck=(isCreator||isSameUnit);if(preCheck)preCount++;html+='<div class="ms-item'+(preCheck?' checked':'')+'" data-mid="'+m.id+'" data-name="'+m.name+'" onclick="toggleGTMember(this)"><div class="ms-check">'+(preCheck?'✓':'')+'</div><div><div class="ms-name">'+m.name+(isCreator?' (你)':'')+'</div><div class="ms-hint">'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'</div></div></div>';}
   html+='</div></div>';
   html+='<div style="margin-top:12px;display:flex;gap:8px;"><button class="btn btn-ghost" onclick="closeModal(\x27modal-create-gt\x27)">取消</button><button class="btn btn-primary" onclick="confirmCreateGameTeam()">建立隊伍</button></div>';
   var modal=document.getElementById('modal-create-gt');

@@ -1341,7 +1341,7 @@ function save(){
   else{try{localStorage.setItem('sa6',JSON.stringify({members:S.members,teams:S.teams,log:S.log,lottery:S.lottery,questions:S.questions,rankTiers:S.rankTiers,nextMid:S.nextMid,nextTid:S.nextTid}));}catch(e){}}
 }
 function saveMissions(){if(useFirebase&&db)db.ref('game/missions').set(S.missions);else try{localStorage.setItem('sa6_missions',JSON.stringify(S.missions));}catch(e){}}
-function loadSession(){adminIn=localStorage.getItem('adminIn')==='1';adminName=localStorage.getItem('adminName')||'';var r=localStorage.getItem('dashMid');dashMid=(r&&parseInt(r))?parseInt(r):null;}
+function loadSession(){adminIn=false;adminName='';var r=localStorage.getItem('dashMid');dashMid=(r&&parseInt(r))?parseInt(r):null;}
 function validateSession(){if(dashMid&&!S.members[dashMid]){dashMid=null;localStorage.removeItem('dashMid');}}
 function saveSession(){localStorage.setItem('adminIn',adminIn?'1':'0');localStorage.setItem('adminName',adminName);localStorage.setItem('dashMid',dashMid?String(dashMid):'');}
 
@@ -1458,9 +1458,7 @@ function renderLB(){
   }
   var uS=Object.keys(UNITS).map(function(k){return{k:k,name:UNITS[k].name,color:UNITS[k].color,score:unitScore(k)};}).sort(function(a,b){return b.score-a.score;});
   html+='<div class="sh" style="margin-top:16px;"><div class="sh-title">單位積分</div></div><div class="card"><div class="unit-grid">'+buildUnitGrid()+'</div>'+buildRankBars()+'</div>';
-  html+='<div class="sh" style="margin-top:16px;"><div class="sh-title">團體積分排名</div></div><div class="card">';
-  uS.forEach(function(u,i){var med=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';html+='<div class="lb-team-row'+(i===0?' first':'')+'"><div style="width:28px;text-align:center;font-size:18px;">'+(med||i+1)+'</div><div style="width:10px;height:10px;border-radius:50%;background:'+u.color+';flex-shrink:0;"></div><div style="flex:1;font-size:14px;font-weight:700;color:var(--text);">'+u.name+'</div><div class="lb-team-score" style="color:'+u.color+';">'+u.score+'</div></div>';});
-  html+='</div>';el.innerHTML=html;
+el.innerHTML=html;
 }
 function toggleLBHidden(){var h=document.getElementById('lb-hidden'),b=document.getElementById('lb-toggle-btn');if(!h||!b)return;var showing=h.style.display!=='none';h.style.display=showing?'none':'block';b.textContent=showing?('▼ 顯示其餘 '+h.querySelectorAll('.lb-row').length+' 人'):'▲ 收起';}
 
@@ -1526,6 +1524,38 @@ function applyScore(sign){
   else{var uMems=membersArray().filter(function(m){return m.unit===selVal;});if(uMems.length===0){showToast('該單位無成員');return;}var per2=Math.round(delta/uMems.length);uMems.forEach(function(m){m.score=(m.score||0)+per2;S.members[m.id]=m;});label=UNITS[selVal].name+'全體（每人'+(per2>=0?'+':'')+per2+'）';}
   addLog(label,delta,note);save();renderAdminContent();renderMembersPage();showToast((delta>=0?'+':'')+delta+' 分已套用');
 }
+
+function undoScore(idx){
+  if(!S.log||!S.log[idx])return;
+  var entry=S.log[idx];
+  if(!confirm('確定要取消這筆紀錄？\n'+entry.label+' '+(entry.delta>=0?'+':'')+entry.delta+' 分'))return;
+  // 反向扣回分數
+  var reverseDelta=-entry.delta;
+  // 找到對應的成員並反向操作
+  var allM=membersArray();
+  // 用 label 找回對象（簡易匹配）
+  for(var i=0;i<allM.length;i++){
+    if(entry.label.indexOf(allM[i].name)>=0){
+      allM[i].score=(allM[i].score||0)+reverseDelta;
+      S.members[allM[i].id]=allM[i];break;
+    }
+  }
+  // 如果是隊伍/單位操作，找所有相關成員
+  var unitKeys=Object.keys(UNITS);
+  for(var j=0;j<unitKeys.length;j++){
+    if(entry.label.indexOf(UNITS[unitKeys[j]].name)>=0){
+      var perMatch=entry.label.match(/每人[+-]?(\d+)/);
+      if(perMatch){var perDelta=-parseInt(perMatch[1])*(entry.delta>=0?1:-1);
+        membersArray().filter(function(m){return m.unit===unitKeys[j];}).forEach(function(m){m.score=(m.score||0)+perDelta;S.members[m.id]=m;});
+      }
+      break;
+    }
+  }
+  // 標記為已取消
+  S.log[idx].label='[已取消] '+entry.label;
+  S.log[idx].delta=0;
+  save();renderAdminContent();showToast('已取消該筆積分');
+}
 function renderAdminTeamList(){var el=document.getElementById('admin-team-list');var ts=teamsArray();if(ts.length===0){el.innerHTML='<div class="empty" style="grid-column:1/-1">尚無隊伍</div>';return;}el.innerHTML=ts.map(function(t){return buildTeamCard(t,true,-1);}).join('');}
 function renderAdminMemberTb(){
   var tb=document.getElementById('admin-member-tbody');var q=(document.getElementById('member-search')?document.getElementById('member-search').value:'').trim().toLowerCase();
@@ -1538,7 +1568,7 @@ function openQS(mid){var m=gm(mid);if(!m)return;document.getElementById('qs-name
 function confirmQS(sign){var mid=parseInt(document.getElementById('qs-mid').value);var delta=Math.min(50,Math.max(10,Math.round(Math.abs(parseInt(document.getElementById('qs-delta').value)||10)/10)*10))*sign;var note=document.getElementById('qs-note').value.trim();var m=gm(mid);if(!m)return;m.score=(m.score||0)+delta;S.members[m.id]=m;addLog(m.name,delta,note);save();closeModal('modal-qs');renderAdminMemberTb();renderLogList();renderMembersPage();showToast(m.name+' '+(delta>=0?'+':'')+delta+' 分');}
 function deleteMember(mid){showConfirm('確定移除此會員？',function(){_doDeleteMember(mid);},'移除會員');}
 function _doDeleteMember(mid){delete S.members[mid];Object.keys(S.teams).forEach(function(tid){var t=S.teams[tid];if(t.members)t.members=t.members.filter(function(id){return parseInt(id)!==mid;});});if(dashMid===mid){dashMid=null;saveSession();}save();renderAdminContent();renderMembersPage();showToast('已移除會員');}
-function renderLogList(){var el=document.getElementById('score-log');if(!S.log||S.log.length===0){el.innerHTML='<div class="empty" style="padding:12px">尚無紀錄</div>';return;}var arr=Array.isArray(S.log)?S.log:Object.values(S.log);el.innerHTML=arr.slice(0,50).map(function(l){var sub=(l.by?'by '+l.by:'')+(l.note?(l.by?' · ':'')+l.note:'');return '<div class="logitem"><div class="ltime">'+l.time+'</div><div class="ltarget"><div>'+l.label+'</div>'+(sub?'<div style="font-size:10px;color:var(--muted);">'+sub+'</div>':'')+'</div><div class="ldelta '+(l.delta>=0?'pos':'neg')+'">'+(l.delta>=0?'+':'')+l.delta+'</div></div>';}).join('');}
+function renderLogList(){var el=document.getElementById('score-log');if(!S.log||S.log.length===0){el.innerHTML='<div class="empty" style="padding:12px">尚無紀錄</div>';return;}var arr=Array.isArray(S.log)?S.log:Object.values(S.log);el.innerHTML=arr.slice(0,50).map(function(l,idx){var sub=(l.by?'by '+l.by:'')+(l.note?(l.by?' · ':'')+l.note:'');return '<div class="logitem"><div class="ltime">'+l.time+'</div><div class="ltarget"><div>'+l.label+'</div>'+(sub?'<div style="font-size:10px;color:var(--muted);">'+sub+'</div>':'')+'</div><div class="ldelta '+(l.delta>=0?'pos':'neg')+'">'+(l.delta>=0?'+':'')+l.delta+'</div><button class="btn btn-danger btn-xs" style="margin-left:6px;flex-shrink:0;" onclick="undoScore('+idx+')">取消</button></div>';}).join('');}
 function openAddMemberModal(){document.getElementById('add-member-name').value='';document.getElementById('add-member-unit').value='';openModal('modal-add-member');setTimeout(function(){var el=document.getElementById('add-member-name');if(el)el.focus();},200);}
 function confirmAddMember(){var name=document.getElementById('add-member-name').value.trim();var unit=document.getElementById('add-member-unit').value;if(!name){showToast('請輸入姓名');return;}if(!unit){showToast('請選擇單位');return;}var id=S.nextMid++;var n=new Date();S.members[id]={id:id,name:name,unit:unit,score:0,joinedAt:(n.getMonth()+1)+'/'+n.getDate()};var team=getUnitTeam(unit);if(team){if(!team.members)team.members=[];team.members.push(id);S.teams[team.id]=team;}save();closeModal('modal-add-member');renderAdminMemberTb();renderAdminTeamList();showToast('已新增「'+name+'」');}
 function openAddToTeamModal(tid){tid=parseInt(tid);var t=gt(tid);if(!t){showToast('找不到隊伍');return;}document.getElementById('att-team-id').value=tid;document.getElementById('att-team-name').textContent=t.name;document.getElementById('att-name').value='';document.getElementById('att-unit').value=t.unitKey||'';openModal('modal-add-to-team');setTimeout(function(){var el=document.getElementById('att-name');if(el)el.focus();},200);}

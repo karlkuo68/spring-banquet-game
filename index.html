@@ -1820,8 +1820,6 @@ function toggleScoreMember(el){
   }
 }
 function scoreCheckAll(){var list=document.getElementById('score-member-check-list');if(!list)return;var items=list.querySelectorAll('.ms-item');items.forEach(function(el){if(!el.classList.contains('checked')){el.classList.add('checked');el.querySelector('.ms-check').textContent='✓';el.querySelector('.ms-check').style.background='var(--accent)';el.querySelector('.ms-check').style.borderColor='var(--accent)';el.querySelector('.ms-check').style.color='#000';}});}
-  boxes.forEach(function(b){b.checked=!allChecked;});
-}
 function filterScoreTeamSel(){
   var q=(document.getElementById('score-team-search').value||'').trim().toLowerCase();
   var sel=document.getElementById('score-target-sel');if(!sel)return;

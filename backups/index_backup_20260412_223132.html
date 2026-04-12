@@ -1372,7 +1372,6 @@ var S={members:{},teams:{},log:[],lottery:[],questions:{lip:[],thorn:[]},rankTie
 var adminIn=false,adminName='',dashMid=null,curTeamId=null,rmMid=null,rmTid=null;
 var selColor=COLORS[0],modalSel=[],useFirebase=false,db=null;
 var lotteryTimer=null,gameDrawTimer=null,prevScores={},curGame='lip',_confirmCallback=null;
-var _writeLock=false,_isOnline=true;// 防連按鎖 + 連線狀態追蹤
 var _photoSetCounter=0; window._photoSets={};
 
 // ══ HELPERS ══
@@ -1408,15 +1407,7 @@ function initApp(){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);db=firebase.database();
     document.getElementById('loading-msg').textContent='連接資料庫…';
-    db.ref('.info/connected').on('value',function(s){
-      var d=document.getElementById('sync-dot');var online=s.val();
-      if(d)d.className='sync-dot '+(online?'online':'');
-      // 斷線時提示（延遲 2 秒避免初始化誤報）
-      if(!online&&_isOnline){setTimeout(function(){if(!_isOnline)showToast('⚠️ 網路已斷線，請檢查連線');},2000);}
-      // 重連時提示
-      if(online&&!_isOnline){showToast('✅ 網路已恢復，資料自動同步中');}
-      _isOnline=online;
-    });
+    db.ref('.info/connected').on('value',function(s){var d=document.getElementById('sync-dot');if(d)d.className='sync-dot '+(s.val()?'online':'');});
     var _loaded=false;
     setTimeout(function(){if(!_loaded){loadLocalFallback();showApp();}},8000);
     db.ref('game').once('value',function(snap){
@@ -1447,22 +1438,19 @@ function loadLocalFallback(){
   loadSession();
 }
 function save(){
-  if(useFirebase&&db){var d=document.getElementById('sync-dot');if(d)d.className='sync-dot syncing';var u={'game/members':S.members,'game/teams':S.teams,'game/log':S.log,'game/lottery':S.lottery,'game/questions':S.questions,'game/rankTiers':S.rankTiers,'game/nextMid':S.nextMid,'game/nextTid':S.nextTid};db.ref().update(u).then(function(){if(d)d.className='sync-dot online';}).catch(function(err){if(d)d.className='sync-dot';showToast('❌ 積分儲存失敗，請重試');console.error('save error:',err);});}
-  else{try{localStorage.setItem('sa6',JSON.stringify({members:S.members,teams:S.teams,log:S.log,lottery:S.lottery,questions:S.questions,rankTiers:S.rankTiers,nextMid:S.nextMid,nextTid:S.nextTid}));}catch(e){showToast('⚠️ 本機儲存空間不足');}}
+  if(useFirebase&&db){var d=document.getElementById('sync-dot');if(d)d.className='sync-dot syncing';var u={'game/members':S.members,'game/teams':S.teams,'game/log':S.log,'game/lottery':S.lottery,'game/questions':S.questions,'game/rankTiers':S.rankTiers,'game/nextMid':S.nextMid,'game/nextTid':S.nextTid};db.ref().update(u).then(function(){if(d)d.className='sync-dot online';});}
+  else{try{localStorage.setItem('sa6',JSON.stringify({members:S.members,teams:S.teams,log:S.log,lottery:S.lottery,questions:S.questions,rankTiers:S.rankTiers,nextMid:S.nextMid,nextTid:S.nextTid}));}catch(e){}}
 }
 function saveMissions(){
   if(useFirebase&&db){
-    var d=document.getElementById('sync-dot');if(d)d.className='sync-dot syncing';
-    // 用 multi-path update 取代全量 set，避免多單位同時上傳時互相覆蓋（race condition）
-    var u={};Object.keys(S.missions).forEach(function(k){u['game/missions/'+k]=S.missions[k];});
-    db.ref().update(u).then(function(){
-      if(d)d.className='sync-dot online';
+    db.ref('game/missions').set(S.missions).then(function(){
+      var d=document.getElementById('sync-dot');if(d)d.className='sync-dot online';
     }).catch(function(err){
-      if(d)d.className='sync-dot';
       console.error('saveMissions error:',err);
       showToast('⚠️ 同步失敗，正在重試…');
+      // 重試一次
       setTimeout(function(){
-        db.ref().update(u).catch(function(err2){
+        db.ref('game/missions').set(S.missions).catch(function(err2){
           showToast('❌ 儲存失敗：'+err2.message);
         });
       },2000);
@@ -1475,7 +1463,7 @@ function saveMissions(){
 }
 function loadSession(){adminIn=false;adminName='';var r=localStorage.getItem('dashMid');dashMid=(r&&parseInt(r))?parseInt(r):null;}
 function validateSession(){if(dashMid&&!S.members[dashMid]){dashMid=null;localStorage.removeItem('dashMid');}}
-function saveSession(){try{localStorage.setItem('adminIn',adminIn?'1':'0');localStorage.setItem('adminName',adminName);localStorage.setItem('dashMid',dashMid?String(dashMid):'');}catch(e){console.warn('saveSession localStorage 空間不足:',e);}}
+function saveSession(){localStorage.setItem('adminIn',adminIn?'1':'0');localStorage.setItem('adminName',adminName);localStorage.setItem('dashMid',dashMid?String(dashMid):'');}
 
 // ══ SHOW APP ══
 function showApp(){
@@ -1841,8 +1829,6 @@ function filterScoreTeamSel(){
   if(items.length>0)sel.selectedIndex=0;
 }
 function applyScoreNew(sign){
-  if(_writeLock){showToast('⏳ 正在儲存中，請稍候…');return;}
-  _writeLock=true;setTimeout(function(){_writeLock=false;},3000);// 防連按：3 秒解鎖
   var abs=Math.min(200,Math.max(10,Math.round(Math.abs(parseInt(document.getElementById('score-delta').value)||10)/10)*10));
   var delta=abs*sign;
   var note=document.getElementById('score-note').value.trim();
@@ -1884,8 +1870,6 @@ function renderTargetSel(){
 }
 function filterScoreTargetSel(){var q=(document.getElementById('score-member-search').value||'').trim().toLowerCase();var sel=document.getElementById('score-target-sel');var arr=membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');});if(q)arr=arr.filter(function(m){var u=UNITS[m.unit]?UNITS[m.unit].name:'';return m.name.toLowerCase().indexOf(q)>=0||u.indexOf(q)>=0;});sel.innerHTML=arr.length===0?'<option>找不到「'+q+'」</option>':arr.map(function(m){return '<option value="'+m.id+'">'+m.name+'（'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'）</option>';}).join('');if(arr.length>0)sel.selectedIndex=0;}
 function applyScore(sign){
-  if(_writeLock){showToast('⏳ 正在儲存中，請稍候…');return;}
-  _writeLock=true;setTimeout(function(){_writeLock=false;},3000);// 防連按：3 秒解鎖
   var type=document.getElementById('score-target-type').value;var selVal=document.getElementById('score-target-sel').value;
   var abs=Math.min(50,Math.max(10,Math.round(Math.abs(parseInt(document.getElementById('score-delta').value)||10)/10)*10));var delta=abs*sign;var note=document.getElementById('score-note').value.trim();var label='';
   if(type==='member'){var m=gm(parseInt(selVal));if(!m){showToast('請選擇會員');return;}m.score=(m.score||0)+delta;S.members[m.id]=m;label=m.name;}
@@ -2303,9 +2287,7 @@ function toggleGTMember(el){
   else{if(checked.length>=_curGameTeamSize){showToast('最多選'+_curGameTeamSize+'人');return;}el.classList.add('checked');el.querySelector('.ms-check').textContent='✓';}
 }
 function confirmCreateGameTeam(){
-  if(_writeLock){showToast('⏳ 正在儲存中，請稍候…');return;}
-  _writeLock=true;setTimeout(function(){_writeLock=false;},3000);// 防連按：3 秒解鎖
-  var name=document.getElementById('gt-name').value.trim();if(!name){_writeLock=false;showToast('請輸入隊伍名稱');return;}
+  var name=document.getElementById('gt-name').value.trim();if(!name){showToast('請輸入隊伍名稱');return;}
   var list=document.getElementById('gt-member-list');var checked=list.querySelectorAll('.ms-item.checked');
   if(checked.length!==_curGameTeamSize){showToast('請選擇'+_curGameTeamSize+'位成員');return;}
   var mids=[];checked.forEach(function(el){mids.push(parseInt(el.getAttribute('data-mid')));});
@@ -2527,11 +2509,7 @@ function renderTravel(){
   var el=document.getElementById('travel-body');if(!el)return;
   var td=(S.missions&&S.missions._travel)?S.missions._travel:{};var title=td.title||'旅行時光';var desc=td.desc||'由管理員設定旅行介紹與影片連結。';var videoUrl=td.videoUrl||'';
   var videoHtml='';if(videoUrl){var embedUrl=videoUrl;if(videoUrl.indexOf('youtube.com/watch')>=0){var vid=videoUrl.match(/v=([^&]+)/);if(vid)embedUrl='https://www.youtube.com/embed/'+vid[1];}else if(videoUrl.indexOf('youtu.be/')>=0){var vid2=videoUrl.match(/youtu\.be\/([^?]+)/);if(vid2)embedUrl='https://www.youtube.com/embed/'+vid2[1];}videoHtml='<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:12px;overflow:hidden;margin-top:14px;"><iframe src="'+embedUrl+'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen allow="autoplay"></iframe></div>';}
-  var travelImgs='<div style="margin-top:16px;display:flex;flex-direction:column;gap:12px;">';
-  var tImgList=['images/travel-info-1.jpeg','images/travel-info-2.jpeg'];
-  for(var ti=0;ti<tImgList.length;ti++){var tik=registerPhotoSet(tImgList);travelImgs+='<div style="border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid rgba(96,165,250,.2);" onclick="openPhotoSet(\''+tik+'\','+ti+')"><img src="'+tImgList[ti]+'" style="width:100%;display:block;" loading="lazy"></div>';}
-  travelImgs+='</div>';
-  el.innerHTML='<div style="background:linear-gradient(135deg,#0c1a40 0%,#1e3a5f 100%);border-radius:14px;padding:22px 18px;margin-bottom:16px;border:1px solid rgba(96,165,250,.3);"><div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#60a5fa;margin-bottom:6px;">✈ 關於此行</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;letter-spacing:3px;color:#fff;margin-bottom:6px;">'+title+'</div><div style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.7;white-space:pre-wrap;">'+desc+'</div>'+videoHtml+travelImgs+'</div>'+(adminIn?'<div class="card"><div class="ct">✈ 旅行頁面設定（管理員）</div><div style="margin-bottom:10px;"><label>標題</label><input type="text" id="travel-title-inp" value="'+title.replace(/"/g,'&quot;')+'" maxlength="40"></div><div style="margin-bottom:10px;"><label>介紹文字</label><textarea id="travel-desc-inp" rows="4" style="width:100%;background:var(--surf);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:inherit;font-size:13px;resize:vertical;">'+desc+'</textarea></div><div style="margin-bottom:10px;"><label>影片連結（YouTube）</label><input type="text" id="travel-video-inp" value="'+videoUrl.replace(/"/g,'&quot;')+'" placeholder="https://www.youtube.com/watch?v=..."></div><button class="btn btn-primary" style="width:100%;" onclick="saveTravelSettings()">💾 儲存</button></div>':'');
+  el.innerHTML='<div style="background:linear-gradient(135deg,#0c1a40 0%,#1e3a5f 100%);border-radius:14px;padding:22px 18px;margin-bottom:16px;border:1px solid rgba(96,165,250,.3);"><div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#60a5fa;margin-bottom:6px;">✈ 關於此行</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;letter-spacing:3px;color:#fff;margin-bottom:6px;">'+title+'</div><div style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.7;white-space:pre-wrap;">'+desc+'</div>'+videoHtml+'</div>'+(adminIn?'<div class="card"><div class="ct">✈ 旅行頁面設定（管理員）</div><div style="margin-bottom:10px;"><label>標題</label><input type="text" id="travel-title-inp" value="'+title.replace(/"/g,'&quot;')+'" maxlength="40"></div><div style="margin-bottom:10px;"><label>介紹文字</label><textarea id="travel-desc-inp" rows="4" style="width:100%;background:var(--surf);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:inherit;font-size:13px;resize:vertical;">'+desc+'</textarea></div><div style="margin-bottom:10px;"><label>影片連結（YouTube）</label><input type="text" id="travel-video-inp" value="'+videoUrl.replace(/"/g,'&quot;')+'" placeholder="https://www.youtube.com/watch?v=..."></div><button class="btn btn-primary" style="width:100%;" onclick="saveTravelSettings()">💾 儲存</button></div>':'');
 }
 function saveTravelSettings(){var title=document.getElementById('travel-title-inp').value.trim()||'旅行時光';var desc=document.getElementById('travel-desc-inp').value.trim();var url=document.getElementById('travel-video-inp').value.trim();if(!S.missions)S.missions={};S.missions._travel={title:title,desc:desc,videoUrl:url};saveMissions();renderTravel();showToast('旅行頁面已儲存');}
 

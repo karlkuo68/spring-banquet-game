@@ -1800,14 +1800,26 @@ function filterScoreMemberCheck(){
   var arr=membersArray().filter(function(m){return m.unit===uk;}).sort(function(a,b){return a.name.localeCompare(b.name,'zh');});
   if(q)arr=arr.filter(function(m){return m.name.toLowerCase().indexOf(q)>=0;});
   list.innerHTML=arr.map(function(m){
-    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);">'
-      +'<input type="checkbox" class="score-m-cb" value="'+m.id+'" style="width:16px;height:16px;accent-color:var(--accent);">'
-      +m.name+'</label>';
+    return '<div class="ms-item" data-mid="'+m.id+'" onclick="toggleScoreMember(this)" style="cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;">'
+      +'<div class="ms-check" style="width:20px;height:20px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;"></div>'
+      +'<div style="font-size:13px;color:var(--text);">'+m.name+'</div></div>';
   }).join('');
 }
-function scoreCheckAll(){
-  var boxes=document.querySelectorAll('.score-m-cb');
-  var allChecked=Array.from(boxes).every(function(b){return b.checked;});
+function toggleScoreMember(el){
+  if(el.classList.contains('checked')){
+    el.classList.remove('checked');
+    el.querySelector('.ms-check').textContent='';
+    el.querySelector('.ms-check').style.background='';
+    el.querySelector('.ms-check').style.borderColor='var(--border)';
+  } else {
+    el.classList.add('checked');
+    el.querySelector('.ms-check').textContent='✓';
+    el.querySelector('.ms-check').style.background='var(--accent)';
+    el.querySelector('.ms-check').style.borderColor='var(--accent)';
+    el.querySelector('.ms-check').style.color='#000';
+  }
+}
+function scoreCheckAll(){var list=document.getElementById('score-member-check-list');if(!list)return;var items=list.querySelectorAll('.ms-item');items.forEach(function(el){if(!el.classList.contains('checked')){el.classList.add('checked');el.querySelector('.ms-check').textContent='✓';el.querySelector('.ms-check').style.background='var(--accent)';el.querySelector('.ms-check').style.borderColor='var(--accent)';el.querySelector('.ms-check').style.color='#000';}});}
   boxes.forEach(function(b){b.checked=!allChecked;});
 }
 function filterScoreTeamSel(){
@@ -1826,10 +1838,10 @@ function applyScoreNew(sign){
   // 第一站 checkbox 模式
   var mcw=document.getElementById('score-member-check-wrap');
   if(mcw&&mcw.style.display!=='none'){
-    var boxes=document.querySelectorAll('.score-m-cb:checked');
+    var boxes=document.querySelectorAll('#score-member-check-list .ms-item.checked');
     if(boxes.length===0){showToast('請至少勾選一位成員');return;}
     var names=[];
-    boxes.forEach(function(b){var m=gm(parseInt(b.value));if(m){m.score=(m.score||0)+delta;S.members[m.id]=m;names.push(m.name);}});
+    boxes.forEach(function(b){var mid=parseInt(b.getAttribute('data-mid'));var m=gm(mid);if(m){m.score=(m.score||0)+delta;S.members[m.id]=m;names.push(m.name);}});
     label=names.join('、')+'（各'+(delta>=0?'+':'')+delta+'）';
     addLog(label,delta,note);save();renderAdminContent();renderMembersPage();showToast((delta>=0?'+':'')+delta+' 分已套用（'+boxes.length+' 人）');
     return;

@@ -2019,67 +2019,100 @@ function resetAllMissions(){S.missions={};saveMissions();showToast('任務已全
 function uploadPhoto(unitKey,stage,inputEl){
   var files=inputEl.files;if(!files||files.length===0)return;
   var file=files[0];inputEl.value='';
-  // 檔案大小檢查（超過15MB警告）
-  // 不限制檔案大小
   showToast('📷 上傳中…請稍候');
-  var reader=new FileReader();
-  reader.onerror=function(err){console.error('FileReader error:',err);showToast('❌ 讀取照片失敗，請重新選擇照片');};reader.onabort=function(){showToast('⚠️ 上傳被中斷，請重試');};
-  reader.onload=function(e){
+
+  // 方法1：用 createObjectURL + Image（最相容）
+  function tryObjectURL(){
+    var url=URL.createObjectURL(file);
     var img=new Image();
-    img.onerror=function(){
-      // 圖片格式無法被 Image() 解碼（可能是 HEIC 等特殊格式）
-      // Fallback：跳過壓縮，直接用 FileReader 的原始 base64
-      console.warn('Image decode failed, using raw base64 fallback');
-      var rawB64=e.target.result;
-      // 如果原始 base64 太大（超過 500KB），截斷提示
-      if(rawB64.length>500000){
-        showToast('⚠️ 照片較大，正在處理…');
-      }
-      if(!S.missions)S.missions={};
-      if(!S.missions[unitKey])S.missions[unitKey]={};
-      var key=stage+'Photos';
-      if(!S.missions[unitKey][key])S.missions[unitKey][key]=[];
-      S.missions[unitKey][key].push(rawB64);
-      S.missions[unitKey][stage+'Done']=true;
-      saveMissions();
-      renderMissionsPage();
-      showToast(stage==='loc3'?'📷 照片已上傳！按下方按鈕完成第三關':'✅ 照片已上傳，任務完成！');
-    };
     img.onload=function(){
-      try{
-        // 壓縮：最大寬度600px，品質0.5（確保base64小於100KB）
-        var maxW=600;var scale=Math.min(1,maxW/img.width);
-        var canvas=document.createElement('canvas');
-        canvas.width=Math.round(img.width*scale);
-        canvas.height=Math.round(img.height*scale);
-        var ctx=canvas.getContext('2d');
-        ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        var b64=canvas.toDataURL('image/jpeg',0.5);
-        // 如果還是太大，再壓一次
-        if(b64.length>150000){
-          var scale2=Math.min(1,400/img.width);
-          canvas.width=Math.round(img.width*scale2);
-          canvas.height=Math.round(img.height*scale2);
-          ctx.drawImage(img,0,0,canvas.width,canvas.height);
-          b64=canvas.toDataURL('image/jpeg',0.4);
-        }
-        if(!S.missions)S.missions={};
-        if(!S.missions[unitKey])S.missions[unitKey]={};
-        var key=stage+'Photos';
-        if(!S.missions[unitKey][key])S.missions[unitKey][key]=[];
-        S.missions[unitKey][key].push(b64);
-        S.missions[unitKey][stage+'Done']=true;
-        saveMissions();
-        renderMissionsPage();
-        showToast(stage==='loc3'?'📷 照片已上傳！按下方按鈕完成第三關':'✅ 照片已上傳，任務完成！');
-      }catch(err){
-        console.error('uploadPhoto error:',err);
-        showToast('❌ 上傳失敗：'+err.message+'，請重試');
+      URL.revokeObjectURL(url);
+      compressAndSave(img);
+    };
+    img.onerror=function(){
+      URL.revokeObjectURL(url);
+      // 方法2：用 createImageBitmap（支援更多格式）
+      if(typeof createImageBitmap==='function'){
+        createImageBitmap(file).then(function(bmp){
+          compressAndSave(bmp);
+        }).catch(function(){
+          // 方法3：用 FileReader base64
+          tryFileReader();
+        });
+      } else {
+        tryFileReader();
       }
     };
-    img.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
+    img.src=url;
+  }
+
+  function tryFileReader(){
+    var reader=new FileReader();
+    reader.onerror=function(){showToast('❌ 讀取失敗，請重新選擇');};
+    reader.onload=function(e){
+      var img2=new Image();
+      img2.onload=function(){compressAndSave(img2);};
+      img2.onerror=function(){
+        // 所有方法都失敗，直接存但要壓縮大小
+        var raw=e.target.result;
+        if(raw.length>1000000){
+          showToast('⚠️ 此照片格式特殊且太大，請改用截圖方式上傳');
+          return;
+        }
+        saveToFirebase(raw);
+      };
+      img2.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function compressAndSave(imgOrBmp){
+    try{
+      var w=imgOrBmp.width||imgOrBmp.naturalWidth||600;
+      var h=imgOrBmp.height||imgOrBmp.naturalHeight||600;
+      // 第一次壓縮：最大 500px
+      var maxW=500;var scale=Math.min(1,maxW/w);
+      var canvas=document.createElement('canvas');
+      canvas.width=Math.round(w*scale);
+      canvas.height=Math.round(h*scale);
+      canvas.getContext('2d').drawImage(imgOrBmp,0,0,canvas.width,canvas.height);
+      var b64=canvas.toDataURL('image/jpeg',0.45);
+      // 如果還太大（>200KB base64），再壓
+      if(b64.length>200000){
+        var scale2=Math.min(1,300/w);
+        canvas.width=Math.round(w*scale2);
+        canvas.height=Math.round(h*scale2);
+        canvas.getContext('2d').drawImage(imgOrBmp,0,0,canvas.width,canvas.height);
+        b64=canvas.toDataURL('image/jpeg',0.35);
+      }
+      // 最終保護：超過 500KB 還是太大
+      if(b64.length>500000){
+        var scale3=Math.min(1,200/w);
+        canvas.width=Math.round(w*scale3);
+        canvas.height=Math.round(h*scale3);
+        canvas.getContext('2d').drawImage(imgOrBmp,0,0,canvas.width,canvas.height);
+        b64=canvas.toDataURL('image/jpeg',0.3);
+      }
+      saveToFirebase(b64);
+    }catch(err){
+      console.error('compress error:',err);
+      showToast('❌ 壓縮失敗：'+err.message);
+    }
+  }
+
+  function saveToFirebase(b64){
+    if(!S.missions)S.missions={};
+    if(!S.missions[unitKey])S.missions[unitKey]={};
+    var key=stage+'Photos';
+    if(!S.missions[unitKey][key])S.missions[unitKey][key]=[];
+    S.missions[unitKey][key].push(b64);
+    S.missions[unitKey][stage+'Done']=true;
+    saveMissions();
+    renderMissionsPage();
+    showToast(stage==='loc3'?'📷 照片已上傳！按下方按鈕完成第三關':'✅ 照片已上傳，任務完成！');
+  }
+
+  tryObjectURL();
 }
 function deletePhoto(unitKey,stage,idx){var key=stage+'Photos';if(S.missions&&S.missions[unitKey]&&S.missions[unitKey][key]){S.missions[unitKey][key].splice(idx,1);if(S.missions[unitKey][key].length===0){S.missions[unitKey][stage+'Done']=false;}saveMissions();renderMissionsPage();showToast('照片已刪除');}}
 // 完成三關：標記完成並自動加 30 分給該單位所有成員（需求#8）

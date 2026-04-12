@@ -1966,7 +1966,7 @@ function downloadPhoto(){var src=viewPhotos[viewPhotoIdx];if(!src)return;var a=d
 
 // ══ MISSIONS (STATION 1) ══
 function getMissionState(uk){if(!S.missions)S.missions={};if(!S.missions[uk])S.missions[uk]={};return S.missions[uk];}
-function canOperateMission(){if(adminIn)return true;var uk=myUnit();if(!uk)return false;var t=getUnitTeam(uk);if(!t)return true;return parseInt(t.leaderId)===parseInt(dashMid);}
+function canOperateMission(){if(adminIn)return true;var uk=myUnit();if(!uk)return false;return true;/* 所有單位成員都可以上傳照片和操作任務 */}
 function assignLoc1(){
   if(!adminIn)return;
   var locs=(S.missions&&S.missions._locations)?S.missions._locations.slice():DEFAULT_LOCATIONS.slice();

@@ -2375,18 +2375,14 @@ function drawThorn(diff){
   var idx=Math.floor(Math.random()*avail.length);var picked=avail[idx];
   var origIdx=pool.indexOf(picked);_thornUsed[diff][origIdx]=true;
   var labels={easy:'簡單 🟢',medium:'中等 🟡',hard:'困難 🔴'};
-  // 滾動動畫
   var icon=document.getElementById('draw-result-icon');
   var type=document.getElementById('draw-result-type');
   var text=document.getElementById('draw-result-text');
-  icon.textContent='🌵';type.textContent='如芒刺背 — '+labels[diff];
-  text.style.fontSize='48px';
+  icon.textContent='🌵';
+  type.textContent='如芒刺背 — '+labels[diff]+' （剩 '+(avail.length-1)+' 題）';
+  text.style.fontSize='48px';text.style.opacity='1';
+  text.textContent=picked;
   openModal('modal-draw-result');
-  var roll=0,total=15,timer=setInterval(function(){
-    text.textContent=pool[Math.floor(Math.random()*pool.length)];
-    text.style.opacity=(roll/total<0.7)?'1':'0.6';
-    roll++;if(roll>=total){clearInterval(timer);text.textContent=picked;text.style.opacity='1';}
-  },100);
 }
 function resetThornUsed(){_thornUsed={easy:{},medium:{},hard:{}};showToast('如芒刺背題目已全部重置');}
 
@@ -2413,14 +2409,11 @@ function drawLip(){
   var icon=document.getElementById('draw-result-icon');
   var type=document.getElementById('draw-result-type');
   var text=document.getElementById('draw-result-text');
-  icon.textContent='👄';type.textContent='比手劃腳（剩 '+(avail.length-1)+' 題）';
-  text.style.fontSize='48px';
+  icon.textContent='👄';
+  type.textContent='比手劃腳（剩 '+(avail.length-1)+' 題）';
+  text.style.fontSize='48px';text.style.opacity='1';
+  text.textContent=picked;
   openModal('modal-draw-result');
-  var roll=0,total=15,timer=setInterval(function(){
-    text.textContent=LIP_DB[Math.floor(Math.random()*LIP_DB.length)];
-    text.style.opacity=(roll/total<0.7)?'1':'0.6';
-    roll++;if(roll>=total){clearInterval(timer);text.textContent=picked;text.style.opacity='1';}
-  },100);
 }
 function resetLipUsed(){_lipUsed={};showToast('比手劃腳題目已全部重置（共 '+LIP_DB.length+' 題）');}
 

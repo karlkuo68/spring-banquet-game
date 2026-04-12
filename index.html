@@ -578,11 +578,21 @@ input::placeholder{color:var(--muted);}
   border:1px solid var(--border);cursor:pointer;position:relative;
 }
 .photo-thumb img{width:100%;height:100%;object-fit:cover;}
-.photo-thumb:hover .photo-del{display:flex;}
-.photo-del{
+.photo-thumb:hover .photo-del-overlay{display:flex;}
+.photo-del-overlay{
   display:none;position:absolute;inset:0;
-  background:rgba(0,0,0,.6);align-items:center;justify-content:center;
-  color:#fff;font-size:20px;
+  background:rgba(0,0,0,.4);align-items:center;justify-content:center;
+  color:#fff;font-size:20px;pointer-events:none;
+}
+.photo-del{
+  position:absolute;top:2px;right:2px;
+  width:24px;height:24px;border-radius:50%;
+  background:rgba(248,81,73,.9);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;font-weight:700;
+  cursor:pointer;touch-action:manipulation;
+  z-index:2;border:none;
+  -webkit-tap-highlight-color:transparent;
 }
 .team-task-row{
   display:flex;align-items:center;gap:10px;
@@ -2049,13 +2059,13 @@ function renderMissionsPage(){
     if(q1Active){html+='<div class="mission-dest">📍 你們的地點：'+(ms.loc1||'—')+'</div>';if(locRefPhoto){var lpk=registerPhotoSet([locRefPhoto]);html+='<div style="margin:10px 0;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid var(--border);max-width:320px;" onclick="openPhotoSet(\''+lpk+'\',0)"><img src="'+locRefPhoto+'" style="width:100%;display:block;" loading="lazy"><div style="padding:6px 10px;font-size:11px;color:var(--sub);background:var(--surf);">📍 參考照片 · 點擊放大</div></div>';};html+='<br>';}
     // Q1 照片上傳（capture 支援 iOS 直接拍照，需求#2 #8）
     if(q1Active&&canOp)html+='<label class="photo-upload-area" for="q1-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳照片即完成任務</div></label><input type="file" id="q1-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc1\',this)">';
-    if(q1Photos.length>0){var q1key=registerPhotoSet(q1Photos);html+='<div class="photo-grid">';for(var pi=0;pi<q1Photos.length;pi++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q1key+'\','+pi+')"><img src="'+q1Photos[pi]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc1\','+pi+')">🗑</div>':'')+' </div>';html+='</div>';}
+    if(q1Photos.length>0){var q1key=registerPhotoSet(q1Photos);html+='<div class="photo-grid">';for(var pi=0;pi<q1Photos.length;pi++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q1key+'\','+pi+')"><img src="'+q1Photos[pi]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc1\','+pi+')">✕</div>':'')+' </div>';html+='</div>';}
     html+='</div>';
     // Q2
     var q2Unlocked=q1Done,q2Done=!!ms.loc2Done,q2Photos=ms.loc2Photos||[];var q2Target=ms.loc2Target?UNIT_NAMES[ms.loc2Target]:'—';
     if(!q2Unlocked){html+='<div class="mission-card locked"><div class="mission-num">2</div><div class="mission-tag mission-tag-locked">🔒 完成任務一後解鎖</div><div class="mission-title" style="color:var(--muted);">任務二</div><div style="font-size:13px;color:var(--muted);margin-top:4px;">內容解鎖前保密</div></div>';}
     else{html+='<div class="mission-card '+(q2Done?'done':'active')+'"><div class="mission-num">2</div><div class="mission-tag mission-tag-'+(q2Done?'done':'active')+'">'+(q2Done?'✅ 已完成':'⚡ 進行中')+'</div><div class="mission-title">任務二 · 跨隊合照</div><div class="mission-desc">前往找指定隊伍拍合照，對方不能拒絕！</div><div class="mission-dest">🤝 找：<strong>'+q2Target+'</strong> 拍合照</div><br>';// Q2 照片上傳（capture 支援 iOS 直接拍照，需求#2 #8）
-      if(canOp)html+='<label class="photo-upload-area" for="q2-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳合照即完成任務</div></label><input type="file" id="q2-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc2\',this)">';if(q2Photos.length>0){var q2key=registerPhotoSet(q2Photos);html+='<div class="photo-grid">';for(var pj2=0;pj2<q2Photos.length;pj2++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q2key+'\','+pj2+')"><img src="'+q2Photos[pj2]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc2\','+pj2+')">🗑</div>':'')+' </div>';html+='</div>';}html+='</div>';}
+      if(canOp)html+='<label class="photo-upload-area" for="q2-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳合照即完成任務</div></label><input type="file" id="q2-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc2\',this)">';if(q2Photos.length>0){var q2key=registerPhotoSet(q2Photos);html+='<div class="photo-grid">';for(var pj2=0;pj2<q2Photos.length;pj2++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q2key+'\','+pj2+')"><img src="'+q2Photos[pj2]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc2\','+pj2+')">✕</div>':'')+' </div>';html+='</div>';}html+='</div>';}
     // Q3：大合照 + 倒數計時 + 30分獎勵（需求#8）
     var q3Unlocked=q1Done&&q2Done,q3Done=!!ms.q3Done;var q3Loc=(S.missions&&S.missions._q3location)||Q3_LOCATION;
     var q3Photos=ms.loc3Photos||[];
@@ -2070,7 +2080,7 @@ function renderMissionsPage(){
       // 照片上傳
       if(canOp){html+='<label class="photo-upload-area" for="q3-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳大合照</div></label><input type="file" id="q3-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc3\',this)">';}
       // 已上傳照片縮圖
-      if(q3Photos.length>0){var q3key=registerPhotoSet(q3Photos);html+='<div class="photo-grid">';for(var pq3=0;pq3<q3Photos.length;pq3++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q3key+'\','+pq3+')"><img src="'+q3Photos[pq3]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc3\','+pq3+')">🗑</div>':'')+' </div>';html+='</div>';}
+      if(q3Photos.length>0){var q3key=registerPhotoSet(q3Photos);html+='<div class="photo-grid">';for(var pq3=0;pq3<q3Photos.length;pq3++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q3key+'\','+pq3+')"><img src="'+q3Photos[pq3]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc3\','+pq3+')">✕</div>':'')+' </div>';html+='</div>';}
       // 完成按鈕（有照片才顯示）
       if(!q3Done&&canOp&&q3Photos.length>0)html+='<button class="btn btn-success" style="width:100%;margin-top:12px;" onclick="markQ3Done(\''+uk+'\')">✅ 完成第三關（全隊 +30分）</button>';
       html+='</div>';
@@ -2376,7 +2386,7 @@ function confirmAddQ(){var text=document.getElementById('add-q-inp').value.trim(
 
 // ══ STATION 2 ADMIN ══
 function renderStation2Admin(){var el=document.getElementById('admin-station2-section');if(!el)return;var s2data=(S.missions&&S.missions._station2)?S.missions._station2:{};var s3data=(S.missions&&S.missions._station3)?S.missions._station3:{};var html='<div style="margin-bottom:6px;font-size:12px;color:var(--sub);">為各遊戲上傳解說圖片，遊戲頁面上會顯示。</div><div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;margin:10px 0 6px;">🌿 第二站 — 組隊大草原</div>';for(var i=0;i<STATION2_GAMES.length;i++){var g=STATION2_GAMES[i];html+=buildStationPhotoUploadRow(g.name,'2',g.id,s2data[g.id+'_photos']||[]);}html+='<div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;margin:14px 0 6px;">🎤 第三站 — 店競晚會</div>';var s3games=[{id:'lip',name:'👄 唇語猜謎'},{id:'thorn',name:'🌵 如芒刺背'}];for(var j=0;j<s3games.length;j++){var sg=s3games[j];html+=buildStationPhotoUploadRow(sg.name,'3',sg.id,s3data[sg.id+'_photos']||[]);}el.innerHTML=html;}
-function buildStationPhotoUploadRow(name,station,gameId,photos){var thumbs='';for(var pi=0;pi<photos.length;pi++){var ak=registerPhotoSet(photos);thumbs+='<div class="photo-thumb" style="width:60px;height:60px;" onclick="openPhotoSet(\''+ak+'\','+pi+')"><img src="'+photos[pi]+'" loading="lazy"><div class="photo-del" onclick="event.stopPropagation();deleteStationPhoto(\''+station+'\',\''+gameId+'\','+pi+')">🗑</div></div>';}return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);"><div style="flex:1;font-size:13px;font-weight:600;color:var(--text);">'+name+'</div><div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">'+thumbs+'<label for="sp-'+station+'-'+gameId+'" style="width:40px;height:40px;border:2px dashed var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--sub);" title="上傳">+</label><input type="file" id="sp-'+station+'-'+gameId+'" accept="image/*" style="display:none;" onchange="uploadStationPhoto(\''+station+'\',\''+gameId+'\',this)"></div></div>';}
+function buildStationPhotoUploadRow(name,station,gameId,photos){var thumbs='';for(var pi=0;pi<photos.length;pi++){var ak=registerPhotoSet(photos);thumbs+='<div class="photo-thumb" style="width:60px;height:60px;" onclick="openPhotoSet(\''+ak+'\','+pi+')"><img src="'+photos[pi]+'" loading="lazy"><div class="photo-del" onclick="event.stopPropagation();deleteStationPhoto(\''+station+'\',\''+gameId+'\','+pi+')">✕</div></div>';}return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);"><div style="flex:1;font-size:13px;font-weight:600;color:var(--text);">'+name+'</div><div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">'+thumbs+'<label for="sp-'+station+'-'+gameId+'" style="width:40px;height:40px;border:2px dashed var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--sub);" title="上傳">+</label><input type="file" id="sp-'+station+'-'+gameId+'" accept="image/*" style="display:none;" onchange="uploadStationPhoto(\''+station+'\',\''+gameId+'\',this)"></div></div>';}
 function uploadStationPhoto(station,gameId,inputEl){var files=inputEl.files;if(!files||!files[0])return;var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas');var maxW=1200;var scale=Math.min(1,maxW/img.width);canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);var b64=canvas.toDataURL('image/jpeg',0.8);if(!S.missions)S.missions={};var sKey='_station'+station;if(!S.missions[sKey])S.missions[sKey]={};var gKey=gameId+'_photos';if(!S.missions[sKey][gKey])S.missions[sKey][gKey]=[];S.missions[sKey][gKey].push(b64);saveMissions();renderStation2Admin();showToast('解說圖片已上傳');};img.src=e.target.result;};reader.readAsDataURL(files[0]);inputEl.value='';}
 function deleteStationPhoto(station,gameId,idx){var sKey='_station'+station,gKey=gameId+'_photos';if(S.missions&&S.missions[sKey]&&S.missions[sKey][gKey]){S.missions[sKey][gKey].splice(idx,1);saveMissions();renderStation2Admin();showToast('已刪除');}}
 

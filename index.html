@@ -2020,7 +2020,7 @@ function uploadPhoto(unitKey,stage,inputEl){
   var files=inputEl.files;if(!files||files.length===0)return;
   var file=files[0];inputEl.value='';
   // 檔案大小檢查（超過15MB警告）
-  if(file.size>15*1024*1024){showToast('⚠️ 照片太大（'+Math.round(file.size/1024/1024)+'MB），請選擇較小的照片');return;}
+  // 不限制檔案大小
   showToast('📷 上傳中…請稍候');
   var reader=new FileReader();
   reader.onerror=function(){showToast('❌ 讀取照片失敗，請重試');};
@@ -2072,7 +2072,7 @@ function markQ3Done(uk){
   S.missions[uk].q3Done=true;
   var team=getUnitTeam(uk);
   if(team&&team.members&&team.members.length>0){
-    team.members.forEach(function(mid){var m=gm(parseInt(mid));if(m){m.score=(m.score||0)+30;S.members[m.id]=m;}});
+    team.members.forEach(function(mid){var m=gm(parseInt(mid));if(m){m.score=(m.score||0)+10;S.members[m.id]=m;}});
     addLog(UNIT_NAMES[uk]+'完成三關任務',30,'任務三完成 獎勵30分');
     save();
   }
@@ -2128,31 +2128,31 @@ function renderMissionsPage(){
     html+='<div class="mission-card '+(q1Status==='wait'?'locked':(q1Status==='done'?'done':'active'))+'"><div class="mission-num">1</div><div class="mission-tag mission-tag-'+(q1Status==='wait'?'locked':(q1Status==='done'?'done':'active'))+'">'+(q1Status==='wait'?'🔒 等待開始':(q1Status==='done'?'✅ 已完成':'⚡ 進行中'))+'</div><div class="mission-title">任務一 · 前往指定地點拍照</div><div class="mission-desc">每個單位前往抽籤分配的地點，拍攝全隊合照後上傳。</div>';
     if(q1Active){html+='<div class="mission-dest">📍 你們的地點：'+(ms.loc1||'—')+'</div>';if(locRefPhoto){var lpk=registerPhotoSet([locRefPhoto]);html+='<div style="margin:10px 0;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid var(--border);max-width:320px;" onclick="openPhotoSet(\''+lpk+'\',0)"><img src="'+locRefPhoto+'" style="width:100%;display:block;" loading="lazy"><div style="padding:6px 10px;font-size:11px;color:var(--sub);background:var(--surf);">📍 參考照片 · 點擊放大</div></div>';};html+='<br>';}
     // Q1 照片上傳（capture 支援 iOS 直接拍照，需求#2 #8）
-    if(q1Active&&canOp)html+='<label class="photo-upload-area" for="q1-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳照片即完成任務</div></label><input type="file" id="q1-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc1\',this)">';
+    if(q1Active&&canOp)html+='<label class="photo-upload-area" for="q1-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳照片即完成任務<br><span style=\'font-size:11px;color:var(--muted);\'>每組傳送一張照片即可</span></div></label><input type="file" id="q1-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc1\',this)">';
     if(q1Photos.length>0){var q1key=registerPhotoSet(q1Photos);html+='<div class="photo-grid">';for(var pi=0;pi<q1Photos.length;pi++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q1key+'\','+pi+')"><img src="'+q1Photos[pi]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc1\','+pi+')">✕</div>':'')+' </div>';html+='</div>';}
     html+='</div>';
     // Q2
     var q2Unlocked=q1Done,q2Done=!!ms.loc2Done,q2Photos=ms.loc2Photos||[];var q2Target=ms.loc2Target?UNIT_NAMES[ms.loc2Target]:'—';
     if(!q2Unlocked){html+='<div class="mission-card locked"><div class="mission-num">2</div><div class="mission-tag mission-tag-locked">🔒 完成任務一後解鎖</div><div class="mission-title" style="color:var(--muted);">任務二</div><div style="font-size:13px;color:var(--muted);margin-top:4px;">內容解鎖前保密</div></div>';}
     else{html+='<div class="mission-card '+(q2Done?'done':'active')+'"><div class="mission-num">2</div><div class="mission-tag mission-tag-'+(q2Done?'done':'active')+'">'+(q2Done?'✅ 已完成':'⚡ 進行中')+'</div><div class="mission-title">任務二 · 跨隊合照</div><div class="mission-desc">前往找指定隊伍拍合照，對方不能拒絕！</div><div class="mission-dest">🤝 找：<strong>'+q2Target+'</strong> 拍合照</div><br>';// Q2 照片上傳（capture 支援 iOS 直接拍照，需求#2 #8）
-      if(canOp)html+='<label class="photo-upload-area" for="q2-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳合照即完成任務</div></label><input type="file" id="q2-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc2\',this)">';if(q2Photos.length>0){var q2key=registerPhotoSet(q2Photos);html+='<div class="photo-grid">';for(var pj2=0;pj2<q2Photos.length;pj2++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q2key+'\','+pj2+')"><img src="'+q2Photos[pj2]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc2\','+pj2+')">✕</div>':'')+' </div>';html+='</div>';}html+='</div>';}
+      if(canOp)html+='<label class="photo-upload-area" for="q2-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳合照即完成任務<br><span style=\'font-size:11px;color:var(--muted);\'>每組傳送一張照片即可</span></div></label><input type="file" id="q2-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc2\',this)">';if(q2Photos.length>0){var q2key=registerPhotoSet(q2Photos);html+='<div class="photo-grid">';for(var pj2=0;pj2<q2Photos.length;pj2++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q2key+'\','+pj2+')"><img src="'+q2Photos[pj2]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc2\','+pj2+')">✕</div>':'')+' </div>';html+='</div>';}html+='</div>';}
     // Q3：大合照 + 倒數計時 + 30分獎勵（需求#8）
     var q3Unlocked=q1Done&&q2Done,q3Done=!!ms.q3Done;var q3Loc=(S.missions&&S.missions._q3location)||Q3_LOCATION;
     var q3Photos=ms.loc3Photos||[];
     if(!q3Unlocked){html+='<div class="mission-card locked"><div class="mission-num">3</div><div class="mission-tag mission-tag-locked">🔒 完成前兩個任務後解鎖</div><div class="mission-title" style="color:var(--muted);">任務三</div><div style="font-size:13px;color:var(--muted);margin-top:4px;">內容解鎖前保密</div></div>';}
     else{
-      html+='<div class="mission-card '+(q3Done?'done':'active')+'"><div class="mission-num">3</div><div class="mission-tag mission-tag-'+(q3Done?'done':'active')+'">'+(q3Done?'✅ 已完成 +30分':'⚡ 進行中')+'</div>';
+      html+='<div class="mission-card '+(q3Done?'done':'active')+'"><div class="mission-num">3</div><div class="mission-tag mission-tag-'+(q3Done?'done':'active')+'">'+(q3Done?'✅ 已完成 +10分':'⚡ 進行中')+'</div>';
       html+='<div class="mission-title">任務三 · 莫內秘密花園大合照</div>';
-      html+='<div class="mission-desc">中午 12:00 在集合地點拍全隊大合照，完成後全隊各得 30 分！</div>';
+      html+='<div class="mission-desc">12:00於集合地點，由珮拍攝團體大合照乙張，入鏡者皆得10分，逾時不候！時間到之前請大家自由活動～</div>';
       html+='<div class="mission-dest">📍 集合地點：'+q3Loc+'</div>';
       // 倒數計時器（每秒更新）
       if(!q3Done)html+='<div id="q3-timer-'+uk+'" style="margin:12px 0;padding:10px 14px;border-radius:10px;background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.2);font-family:\'Bebas Neue\',sans-serif;font-size:22px;color:var(--accent);text-align:center;">計算中…</div>';
       // 照片上傳
-      if(canOp){html+='<label class="photo-upload-area" for="q3-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳大合照</div></label><input type="file" id="q3-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc3\',this)">';}
+      if(canOp){html+='<label class="photo-upload-area" for="q3-upload-'+uk+'"><div style="font-size:28px;margin-bottom:6px;">📷</div><div style="font-size:13px;color:var(--sub);">上傳大合照<br><span style=\'font-size:11px;color:var(--muted);\'>由珮上傳照片</span></div></label><input type="file" id="q3-upload-'+uk+'" accept="image/*" style="display:none;" onchange="uploadPhoto(\''+uk+'\',\'loc3\',this)">';}
       // 已上傳照片縮圖
       if(q3Photos.length>0){var q3key=registerPhotoSet(q3Photos);html+='<div class="photo-grid">';for(var pq3=0;pq3<q3Photos.length;pq3++)html+='<div class="photo-thumb" onclick="openPhotoSet(\''+q3key+'\','+pq3+')"><img src="'+q3Photos[pq3]+'" loading="lazy">'+(canOp?'<div class="photo-del" onclick="event.stopPropagation();deletePhoto(\''+uk+'\',\'loc3\','+pq3+')">✕</div>':'')+' </div>';html+='</div>';}
       // 完成按鈕（有照片才顯示）
-      if(!q3Done&&canOp&&q3Photos.length>0)html+='<button class="btn btn-success" style="width:100%;margin-top:12px;" onclick="markQ3Done(\''+uk+'\')">✅ 完成第三關（全隊 +30分）</button>';
+      if(!q3Done&&canOp&&q3Photos.length>0)html+='<button class="btn btn-success" style="width:100%;margin-top:12px;" onclick="markQ3Done(\''+uk+'\')">✅ 完成第三關（入鏡者 +10分）</button>';
       html+='</div>';
     }
     html+='</div>';

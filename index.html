@@ -1372,6 +1372,7 @@ var S={members:{},teams:{},log:[],lottery:[],questions:{lip:[],thorn:[]},rankTie
 var adminIn=false,adminName='',dashMid=null,curTeamId=null,rmMid=null,rmTid=null;
 var selColor=COLORS[0],modalSel=[],useFirebase=false,db=null;
 var lotteryTimer=null,gameDrawTimer=null,prevScores={},curGame='lip',_confirmCallback=null;
+var _writeLock=false,_isOnline=true;// 防連按鎖 + 連線狀態追蹤
 var _photoSetCounter=0; window._photoSets={};
 
 // ══ HELPERS ══
@@ -1407,7 +1408,15 @@ function initApp(){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);db=firebase.database();
     document.getElementById('loading-msg').textContent='連接資料庫…';
-    db.ref('.info/connected').on('value',function(s){var d=document.getElementById('sync-dot');if(d)d.className='sync-dot '+(s.val()?'online':'');});
+    db.ref('.info/connected').on('value',function(s){
+      var d=document.getElementById('sync-dot');var online=s.val();
+      if(d)d.className='sync-dot '+(online?'online':'');
+      // 斷線時提示（延遲 2 秒避免初始化誤報）
+      if(!online&&_isOnline){setTimeout(function(){if(!_isOnline)showToast('⚠️ 網路已斷線，請檢查連線');},2000);}
+      // 重連時提示
+      if(online&&!_isOnline){showToast('✅ 網路已恢復，資料自動同步中');}
+      _isOnline=online;
+    });
     var _loaded=false;
     setTimeout(function(){if(!_loaded){loadLocalFallback();showApp();}},8000);
     db.ref('game').once('value',function(snap){
@@ -1438,19 +1447,22 @@ function loadLocalFallback(){
   loadSession();
 }
 function save(){
-  if(useFirebase&&db){var d=document.getElementById('sync-dot');if(d)d.className='sync-dot syncing';var u={'game/members':S.members,'game/teams':S.teams,'game/log':S.log,'game/lottery':S.lottery,'game/questions':S.questions,'game/rankTiers':S.rankTiers,'game/nextMid':S.nextMid,'game/nextTid':S.nextTid};db.ref().update(u).then(function(){if(d)d.className='sync-dot online';});}
-  else{try{localStorage.setItem('sa6',JSON.stringify({members:S.members,teams:S.teams,log:S.log,lottery:S.lottery,questions:S.questions,rankTiers:S.rankTiers,nextMid:S.nextMid,nextTid:S.nextTid}));}catch(e){}}
+  if(useFirebase&&db){var d=document.getElementById('sync-dot');if(d)d.className='sync-dot syncing';var u={'game/members':S.members,'game/teams':S.teams,'game/log':S.log,'game/lottery':S.lottery,'game/questions':S.questions,'game/rankTiers':S.rankTiers,'game/nextMid':S.nextMid,'game/nextTid':S.nextTid};db.ref().update(u).then(function(){if(d)d.className='sync-dot online';}).catch(function(err){if(d)d.className='sync-dot';showToast('❌ 積分儲存失敗，請重試');console.error('save error:',err);});}
+  else{try{localStorage.setItem('sa6',JSON.stringify({members:S.members,teams:S.teams,log:S.log,lottery:S.lottery,questions:S.questions,rankTiers:S.rankTiers,nextMid:S.nextMid,nextTid:S.nextTid}));}catch(e){showToast('⚠️ 本機儲存空間不足');}}
 }
 function saveMissions(){
   if(useFirebase&&db){
-    db.ref('game/missions').set(S.missions).then(function(){
-      var d=document.getElementById('sync-dot');if(d)d.className='sync-dot online';
+    var d=document.getElementById('sync-dot');if(d)d.className='sync-dot syncing';
+    // 用 multi-path update 取代全量 set，避免多單位同時上傳時互相覆蓋（race condition）
+    var u={};Object.keys(S.missions).forEach(function(k){u['game/missions/'+k]=S.missions[k];});
+    db.ref().update(u).then(function(){
+      if(d)d.className='sync-dot online';
     }).catch(function(err){
+      if(d)d.className='sync-dot';
       console.error('saveMissions error:',err);
       showToast('⚠️ 同步失敗，正在重試…');
-      // 重試一次
       setTimeout(function(){
-        db.ref('game/missions').set(S.missions).catch(function(err2){
+        db.ref().update(u).catch(function(err2){
           showToast('❌ 儲存失敗：'+err2.message);
         });
       },2000);
@@ -1463,7 +1475,7 @@ function saveMissions(){
 }
 function loadSession(){adminIn=false;adminName='';var r=localStorage.getItem('dashMid');dashMid=(r&&parseInt(r))?parseInt(r):null;}
 function validateSession(){if(dashMid&&!S.members[dashMid]){dashMid=null;localStorage.removeItem('dashMid');}}
-function saveSession(){localStorage.setItem('adminIn',adminIn?'1':'0');localStorage.setItem('adminName',adminName);localStorage.setItem('dashMid',dashMid?String(dashMid):'');}
+function saveSession(){try{localStorage.setItem('adminIn',adminIn?'1':'0');localStorage.setItem('adminName',adminName);localStorage.setItem('dashMid',dashMid?String(dashMid):'');}catch(e){console.warn('saveSession localStorage 空間不足:',e);}}
 
 // ══ SHOW APP ══
 function showApp(){
@@ -1829,6 +1841,8 @@ function filterScoreTeamSel(){
   if(items.length>0)sel.selectedIndex=0;
 }
 function applyScoreNew(sign){
+  if(_writeLock){showToast('⏳ 正在儲存中，請稍候…');return;}
+  _writeLock=true;setTimeout(function(){_writeLock=false;},3000);// 防連按：3 秒解鎖
   var abs=Math.min(200,Math.max(10,Math.round(Math.abs(parseInt(document.getElementById('score-delta').value)||10)/10)*10));
   var delta=abs*sign;
   var note=document.getElementById('score-note').value.trim();
@@ -1870,6 +1884,8 @@ function renderTargetSel(){
 }
 function filterScoreTargetSel(){var q=(document.getElementById('score-member-search').value||'').trim().toLowerCase();var sel=document.getElementById('score-target-sel');var arr=membersArray().sort(function(a,b){return a.name.localeCompare(b.name,'zh');});if(q)arr=arr.filter(function(m){var u=UNITS[m.unit]?UNITS[m.unit].name:'';return m.name.toLowerCase().indexOf(q)>=0||u.indexOf(q)>=0;});sel.innerHTML=arr.length===0?'<option>找不到「'+q+'」</option>':arr.map(function(m){return '<option value="'+m.id+'">'+m.name+'（'+(UNITS[m.unit]?UNITS[m.unit].name:'')+'）</option>';}).join('');if(arr.length>0)sel.selectedIndex=0;}
 function applyScore(sign){
+  if(_writeLock){showToast('⏳ 正在儲存中，請稍候…');return;}
+  _writeLock=true;setTimeout(function(){_writeLock=false;},3000);// 防連按：3 秒解鎖
   var type=document.getElementById('score-target-type').value;var selVal=document.getElementById('score-target-sel').value;
   var abs=Math.min(50,Math.max(10,Math.round(Math.abs(parseInt(document.getElementById('score-delta').value)||10)/10)*10));var delta=abs*sign;var note=document.getElementById('score-note').value.trim();var label='';
   if(type==='member'){var m=gm(parseInt(selVal));if(!m){showToast('請選擇會員');return;}m.score=(m.score||0)+delta;S.members[m.id]=m;label=m.name;}
@@ -2287,7 +2303,9 @@ function toggleGTMember(el){
   else{if(checked.length>=_curGameTeamSize){showToast('最多選'+_curGameTeamSize+'人');return;}el.classList.add('checked');el.querySelector('.ms-check').textContent='✓';}
 }
 function confirmCreateGameTeam(){
-  var name=document.getElementById('gt-name').value.trim();if(!name){showToast('請輸入隊伍名稱');return;}
+  if(_writeLock){showToast('⏳ 正在儲存中，請稍候…');return;}
+  _writeLock=true;setTimeout(function(){_writeLock=false;},3000);// 防連按：3 秒解鎖
+  var name=document.getElementById('gt-name').value.trim();if(!name){_writeLock=false;showToast('請輸入隊伍名稱');return;}
   var list=document.getElementById('gt-member-list');var checked=list.querySelectorAll('.ms-item.checked');
   if(checked.length!==_curGameTeamSize){showToast('請選擇'+_curGameTeamSize+'位成員');return;}
   var mids=[];checked.forEach(function(el){mids.push(parseInt(el.getAttribute('data-mid')));});
